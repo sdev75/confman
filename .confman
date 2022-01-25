@@ -1,0 +1,12 @@
+
+vim(){
+  add .vimrc
+  add .vim/
+}
+
+bash(){
+  add .bashrc
+  add .bash_profile
+  add .xinitrc
+}
+
