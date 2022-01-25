@@ -1,10 +1,13 @@
 
-vim(){
+vim {
   add .vimrc
-  add .vim/
+  add .vim/colors/
+  add .vim/pack/
+  add .vim/syntax/
+  add .confman
 }
 
-bash(){
+bash {
   add .bashrc
   add .bash_profile
   add .xinitrc
