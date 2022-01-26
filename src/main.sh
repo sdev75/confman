@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 
 #include misc.sh
+#include cfg.sh
 
 # Set default cachedir 
 # default value to ~/.cache/confman
@@ -9,23 +10,25 @@ if [ -z ${CACHEDIR+x} ]; then
   CACHEDIR=$HOME/.cache/confman
 fi
 
-# CacheDir must exists to operate correctly
-if [ ! -d $CACHEDIR ]; then
-  read -rep "$CACHEDIR does not exist. Would you like to create it? (y/n)" -n 1
-  if echo $REPLY | grep -Eq '[yY]'; then
-    mkdir -p $CACHEDIR
-  else
-   errmsg "$CACHEDIR is required to use this program" 
-   exit 1
+cache_init(){
+  # CacheDir must exists to operate correctly
+  if [ ! -d $CACHEDIR ]; then
+    read -rep "$CACHEDIR does not exist. Would you like to create it? (y/n)" -n 1
+    if echo $REPLY | grep -Eq '[yY]'; then
+      mkdir -p $CACHEDIR
+    else
+     errmsg "$CACHEDIR is required to use this program" 
+     exit 1
+    fi
   fi
-fi
 
-# Ge the absolute path and compare it with current working directory
-CACHEDIR=$(realpath "$CACHEDIR")
-if [ "$CACHEDIR" = "$(pwd)" ]; then
-  errmsg "In sourcing disabled"
-  exit 1
-fi
+  # Ge the absolute path and compare it with current working directory
+  CACHEDIR=$(realpath "$CACHEDIR")
+  if [ "$CACHEDIR" = "$(pwd)" ]; then
+    errmsg "In sourcing disabled"
+    exit 1
+  fi
+}
 
 snapshot_id(){
   #echo $(date +%Y-%d-%b) | tr '[:upper:]' '[:lower:]'
@@ -62,7 +65,7 @@ parse(){
       return "${CACHEDIR}/${SNAPSHOTID}/" groupid ".tar"
     }
     function gettarcmd (src, dst){
-      return "tar -r --file=\"" dst "\" \"${SRCDIR}/" src "\""
+      return "tar -v --append --file=\"" dst "\" \""  src "\""
     }
     function getgzipcmd (filename){
       return "gzip -9 \"" filename "\""
@@ -103,22 +106,35 @@ parse(){
         for (i=0; i < length(groupcmds[groupid]); i++){
           print  groupcmds[groupid][i]
         }
-        print getgzipcmd(getfilename(groupid))
+        #print getgzipcmd(getfilename(groupid))
         print "}"
       }
     }
   ')
 
-  #local snapshot_id=$1
-  #local filename="$CACHEDIR/$snapshot_id"
-  buf=$(awk  "$script" .confman)
-  #echo "$buf" > "$CACHEDIR/$snapshot_id"
+  buf=$(awk "$script" .confman)
   echo "$buf"
 }
 
-do_snapshot(){
-  echo "todo"
+snapshot_create(){
+
+  local snapshotid=$(snapshot_id)
+  local cachedir=$CACHEDIR
+  
+  if [ ! -d $cachedir/$snapshotid ]; then
+   mkdir -p $cachedir/$snapshotid
+  fi
+
+  buf=$(parse)
+  eval "$buf"
+  declare -F | grep '__cm'
+  export CACHEDIR=$cachedir
+  export SRCDIR=$(pwd)
+  export SNAPSHOTID=$snapshotid
+  __cm_vim
 }
 
-buf=$(parse)
-echo "$buf" > tmp.sh
+#snapshot_create
+
+#cfg_set test 100
+#echo $(cfg_get "test")
