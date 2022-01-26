@@ -134,7 +134,7 @@ snapshot_create(){
   __cm_vim
 }
 
-#snapshot_create
-
-#cfg_set test 100
-#echo $(cfg_get "test")
+init(){
+  cfg_setflags opts 0
+}
+init $@u
