@@ -4,10 +4,9 @@ vim {
   add .vim/colors/
   add .vim/pack/
   add .vim/syntax/
-  add .confman
 }
 
-bash {
+profile {
   add .bashrc
   add .bash_profile
   add .xinitrc
