@@ -11,10 +11,11 @@ declare -r NOCOLOR='\e[0m'
 
 declare -a HELPTEXT=("
 Usage ${0} [OPTIONS]
-Description goes here
 
 Options:
-  -options go here also
+  -h, --help      Prints this message
+  -f, --file      Configuration file to read
+  --parse         Parse and print configuration then exit
 ")
 
 errmsg(){

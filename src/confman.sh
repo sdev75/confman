@@ -27,10 +27,9 @@ confman_lookup(){
 
 confman_parse(){
   script=('
-#include confman.awk 
+#include confman.awk
   ')
 
   buf=$(awk "$script" .confman)
   echo "$buf"
 }
-

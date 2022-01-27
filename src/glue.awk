@@ -1,10 +1,10 @@
 function recurse(file){
-  while ((getline line<file) > 0)
-    if (line ~/^#include/){
+  while ((getline line < file) > 0)
+    if (line ~ /^#include/){
       gsub(/^#include /,"",line)
-      recurse(ENVIRON["PWD"] "/src/" line)
+      recurse(includedir "/" line)
     } else {
-      print line 
+      print line
     }
     
   close(file)

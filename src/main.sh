@@ -15,7 +15,7 @@ fi
 cache_init(){
   # CacheDir must exists to operate correctly
   if [ ! -d $CACHEDIR ]; then
-    read -rep "$CACHEDIR does not exist. Would you like to create it? (y/n)" -n 1
+    read -rep "$CACHEDIR not found. Shall I create it? (y/n)" -n 1
     if echo $REPLY | grep -Eq '[yY]'; then
       mkdir -p $CACHEDIR
     else
