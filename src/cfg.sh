@@ -4,7 +4,7 @@ cfg_buf_=""
 
 ##
 # Example usage:
-# var=$(cfg_get key1)
+# var=$(cfg_get key1 default_value)
 # if [ $? -ne 0 ]; echo "key does not exist"; fi
 # 
 cfg_get(){
@@ -22,6 +22,9 @@ cfg_get(){
       return 0
     fi
   done
+  if [ ! -z $2 ]; then
+    echo $2
+  fi
   return 1
 }
 

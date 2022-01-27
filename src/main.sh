@@ -37,21 +37,35 @@ checksum(){
   return $res
 }
 
+init_flags(){
+  cfg_setflags opts 0
+  readonly F_CONFMAN_FILE=$((1 << 0))
+  readonly F_CONFIG_PRINT=$((2 << 0))
+}
+
 init_parseopts(){
   local shortargs longargs opts
-
-  shortargs="h"
-  longargs="help"
+  shortargs="hf:"
+  longargs="help,file:,parse"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
-  if (( $? -ne 0 )); then
+  if [ $(( $? )) -ne 0 ]; then
     exit $?
   fi
-  
+
   eval set -- "$opts"
   while true; do
     case "$1" in
       -h|--help)
         help 0
+        ;;
+      --parse)
+        cfg_setflags opts $F_PARSE
+        shift
+        ;;
+      -f|--file)
+        cfg_setflags opts $F_CONFMAN_FILE
+        cfg_set confman $2
+        shift 2
         ;;
       --)
         shift
@@ -66,23 +80,39 @@ init_parseopts(){
 }
 
 init(){
-  cfg_setflags opts 0
-  #init_parseopts $@
+  init_flags
+  init_parseopts $@
   
-  # lookup .confman file
+  # includedir & lookup
+  # Determines the include path of '.confman' file
+  # It can be requested via opt
+  # By default '$PWD/.confman' is inspected
+  #
+  local includedir=$(dirname $(cfg_get confman $PWD/.confman))
   local filename
-  filename=$(confman_lookup $PWD)
+  filename=$(confman_lookup $includedir)
   if [ $? -eq 1 ]; then
-    echo "Unable to find configuration file. IncludeDir: '$PWD'"
+    errmsg "Unable to find .confman file in '$includedir'"
     exit 1
   fi
   
+  #
+  # Save current .confman filename
   cfg_set confman $filename
-  echo "Using configuration file: $(cfg_get confman)"
-  echo "init called"
+  echo "Using $(cfg_get confman)"
+  dispatch
 }
 
 dispatch(){
+  
+  buf=$(confman_parse)
+  echo "$buf"
+  exit 1
+  if cfg_testflags opts $F_CONFIG_PRINT; then
+    echo "you have requested to print the config only"
+    exit
+  fi
+
   errmsg "no route to dispatch"
   help 1
 }
@@ -92,4 +122,4 @@ dispatch_snapshot(){
   exit
 }
 
-init $@u
+init $@

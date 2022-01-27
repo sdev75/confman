@@ -3,10 +3,14 @@ confman_lookup_(){
     echo "$1/.confman"
     return 0
   fi
+
+  # traverse path until .confman is found
+  # temporarily disabled
+  return 1
   if [ "/" = "$1" ]; then
     return 1
   fi
-  confman_lookup $(dirname "$1")
+  confman_lookup_ $(dirname "$1")
 }
 
 confman_lookup(){
