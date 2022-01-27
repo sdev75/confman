@@ -22,11 +22,11 @@ Confman can be run directly using the command line.
 
 ```sh
 # A .confman file will be searched within the same path of the current working directory $PWD
-confman
+confman create      # create snapshot for all groups declared in .confman file
+confman create vim  # create snapshot for specific group
 ```
 
 ```sh
 # set configuration file manually using -f or --file option
 confman -f /home/myuser/.confman
 ```
-

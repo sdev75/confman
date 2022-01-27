@@ -2,12 +2,15 @@
 function getfilename (groupid){
   return "${CACHEDIR}/${SNAPSHOTID}/" groupid ".tar"
 }
+
 function gettarcmd (src, dst){
   return "tar -v --append --file=\"" dst "\" \""  src "\""
 }
+
 function getgzipcmd (filename){
   return "gzip -9 \"" filename "\""
 }
+
 BEGIN {
   group_idx = 0
   group_cmds = 0
@@ -23,9 +26,19 @@ BEGIN {
     gensub(/^([a-z]+).*/,"__\\1(){", "g")
   
   } else {
-    if ($1 == "add") {
+    
+    if (NF == 1){
+      if ($1 != "}"){
+        cmd = "add"
+        src = $1
+      }
+    }else{
+      cmd = $1
+      src = $2
+    }
+    if (cmd == "add") {
       idx = groups[groupid]
-      groupcmds[groupid][idx] = gettarcmd($2,getfilename(groupid))
+      groupcmds[groupid][idx] = gettarcmd(src,getfilename(groupid))
       groups[groupid] += 1
     }
   }

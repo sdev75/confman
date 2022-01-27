@@ -4,13 +4,21 @@ snapshot_id(){
   echo $(date +%s)
 }
 
+##
+# Create tarball and gzip it using attributes such as TAG
+# int snapshot_create (tag)
+##
 snapshot_create(){
-
-  local snapshotid=$(snapshot_id)
-  local cachedir=$CACHEDIR
+  local cachedir snapshotid group=$1 tag=$2
   
+  snapshotid=$(snapshot_id)
+  cachedir=$(cfg_get cachedir)
+ 
+  echo "snapshot create called for $group:$tag and cachedir $cachedir"
+  return 0
+
   if [ ! -d $cachedir/$snapshotid ]; then
-   mkdir -p $cachedir/$snapshotid
+    mkdir -p $cachedir/$snapshotid
   fi
 
   buf=$(parse)

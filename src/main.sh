@@ -8,28 +8,22 @@
 # Set default cachedir 
 # default value to ~/.cache/confman
 # Its possible to pass the value by ENV using CACHEDIR=. confman
-if [ -z ${CACHEDIR+x} ]; then
-  CACHEDIR=$HOME/.cache/confman
-fi
+init_cachedir(){
+  local cachedir=$(cfg_get cachedir $HOME/.cache/confman)
 
-cache_init(){
   # CacheDir must exists to operate correctly
-  if [ ! -d $CACHEDIR ]; then
-    read -rep "$CACHEDIR not found. Shall I create it? (y/n)" -n 1
+  if [ ! -d $cachedir ]; then
+    read -rep "$cachedir not found. Shall I create it? (y/n)" -n 1
     if echo $REPLY | grep -Eq '[yY]'; then
-      mkdir -p $CACHEDIR
+      mkdir -p $cachedir
     else
-     errmsg "$CACHEDIR is required to use this program" 
+     errmsg "$cachedir is required to use this program" 
      exit 1
     fi
   fi
 
-  # Ge the absolute path and compare it with current working directory
-  CACHEDIR=$(realpath "$CACHEDIR")
-  if [ "$CACHEDIR" = "$(pwd)" ]; then
-    errmsg "In sourcing disabled"
-    exit 1
-  fi
+  cachedir=$(realpath $cachedir)
+  cfg_set cachedir $cachedir
 }
 
 checksum(){
@@ -45,8 +39,8 @@ init_flags(){
 
 init_parseopts(){
   local shortargs longargs opts
-  shortargs="hf:"
-  longargs="help,file:,parse"
+  shortargs="hf:t:"
+  longargs="help,file:,parse,cachedir:tag:"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
   if [ $(( $? )) -ne 0 ]; then
     exit $?
@@ -62,9 +56,17 @@ init_parseopts(){
         cfg_setflags opts $F_PARSE_ONLY
         shift
         ;;
+      --cachedir)
+        cfg_set cachedir $2
+        shift 2
+        ;;
       -f|--file)
         cfg_setflags opts $F_CONFMAN_FILE
         cfg_set confman $2
+        shift 2
+        ;;
+      -t|--tag)
+        cfg_set tag $2
         shift 2
         ;;
       --)
@@ -77,11 +79,33 @@ init_parseopts(){
       ;;
     esac
   done
+
+  # parse arguments
+  while true; do
+    case "$1" in
+      create)
+        cfg_set action create
+        if [ ! -z $2 ]; then
+          cfg_set group $2
+          shift 2
+          break
+        fi
+        shift
+        ;;
+      *)
+        shift
+        ;;
+    esac
+    if [ -z $@ ]; then break; fi
+  done
+  echo $opts
+  echo $@
 }
 
 init(){
   init_flags
   init_parseopts $@
+  init_cachedir
   
   # includedir & lookup
   # Determines the include path of '.confman' file
@@ -119,13 +143,24 @@ dispatch(){
     exit
   fi
 
-  errmsg "no route to dispatch"
-  help 1
+  local action=$(cfg_get action none)
+  case "$action" in
+    create)
+      dispatch_snapshot
+      break
+      ;;
+    *)
+      errmsg "No route for the action requested"
+      exit 1
+      ;;
+  esac
 }
 
 dispatch_snapshot(){
-  echo "dispatcher for snapshot section"
-  exit
+  local tag=$(cfg_get tag latest)
+  local group=$(cfg_get group *)
+  snapshot_create $group $tag
+  exit $?
 }
 
 init $@
