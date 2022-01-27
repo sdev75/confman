@@ -40,7 +40,7 @@ checksum(){
 init_flags(){
   cfg_setflags opts 0
   readonly F_CONFMAN_FILE=$((1 << 0))
-  readonly F_CONFIG_PRINT=$((2 << 0))
+  readonly F_PARSE_ONLY=$((2 << 0))
 }
 
 init_parseopts(){
@@ -59,7 +59,7 @@ init_parseopts(){
         help 0
         ;;
       --parse)
-        cfg_setflags opts $F_PARSE
+        cfg_setflags opts $F_PARSE_ONLY
         shift
         ;;
       -f|--file)
@@ -104,12 +104,18 @@ init(){
 }
 
 dispatch(){
+  local buf
+  local filename=$(cfg_get confman)
   
-  buf=$(confman_parse)
-  echo "$buf"
-  exit 1
-  if cfg_testflags opts $F_CONFIG_PRINT; then
-    echo "you have requested to print the config only"
+  # Parse and process configuration file
+  buf=$(confman_process $filename)
+  if [ $? -ne 0 ]; then
+    errmsg "An error has occurred while processing '$filename'"
+  fi
+ 
+  # Print processed conf without proceeding further
+  if cfg_testflags opts $F_PARSE_ONLY; then
+    echo "$buf"
     exit
   fi
 

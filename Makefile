@@ -12,8 +12,11 @@ ${PROG}:
 	mkdir -p build
 	awk \
 		-v includedir="$(shell pwd)/src" \
-		-f src/glue.awk src/main.sh > build/confman
-	chmod +x build/confman
+		-f src/glue.awk src/main.sh > build/confman.i
+	make strip
+
+strip:
+	grep -v '^ *\#' build/confman.i > build/confman
 
 install: ${PROG}
 	install -m 755 build/confman ${PREFIX}/bin

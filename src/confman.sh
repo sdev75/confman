@@ -25,11 +25,15 @@ confman_lookup(){
   return 0
 }
 
-confman_parse(){
+# int confman_parse (filename)
+# Parse configuration and output processed data
+confman_process(){
   script=('
 #include confman.awk
   ')
 
-  buf=$(awk "$script" .confman)
+  buf=$(awk "$script" $1)
+  local res=$?
   echo "$buf"
+  return $(( $res ))
 }
