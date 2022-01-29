@@ -26,12 +26,14 @@ BEGIN {
     gensub(/^([a-z]+).*/,"__\\1(){", "g")
   
   } else {
-    
+   
     if (NF == 1){
-      if ($1 != "}"){
-        cmd = "add"
-        src = $1
+      if ($1 == "}"){
+        print $1
+        next
       }
+      cmd = "add"
+      src = $1
     }else{
       cmd = $1
       src = $2
@@ -55,7 +57,7 @@ END {
   for (groupid in groupcmds){
     print "__cm_" groupid "(){"
     for (i=0; i < length(groupcmds[groupid]); i++){
-      print  groupcmds[groupid][i]
+      print groupcmds[groupid][i]
     }
     #print getgzipcmd(getfilename(groupid))
     print "}"
