@@ -41,6 +41,7 @@ confman_parse(){
 confman_process(){
   buf=$(confman_parse "$1")
   eval "$buf"
+  echo "$buf"
   declare -F | grep -o '__cm_.*'
 
 }
