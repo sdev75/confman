@@ -9,7 +9,7 @@
 # default value to ~/.cache/confman
 # Its possible to pass the value by ENV using CACHEDIR=. confman
 init_cachedir(){
-  local cachedir=$(cfg_get cachedir $HOME/.cache/confman)
+  local cachedir=$1
 
   # CacheDir must exists to operate correctly
   if [ ! -d $cachedir ]; then
@@ -105,7 +105,7 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts $@
-  init_cachedir
+  init_cachedir $(cfg_get cachedir $HOME/.cache/confman)
   
   # includedir & lookup
   # Determines the include path of '.confman' file
