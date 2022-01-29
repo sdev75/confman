@@ -84,9 +84,20 @@ init_parseopts(){
   while true; do
     case "$1" in
       create)
-        cfg_set action create
-        if [ ! -z $2 ]; then
-          cfg_set group $2
+        cfg_set "action" "create"
+        local namespace group
+        if [ ! -z "$2" ]; then
+          if [ $(expr index "$2" ":") ]; then
+            local IFS=':'
+            read -r -a pair <<< "$2"
+            namespace=${pair[0]}
+            group=${pair[1]}
+            cfg_set "namespace" "${pair[0]}"
+            cfg_set "group" "${pair[1]}"
+          else
+            namespace="default"
+            group=$2
+          fi
           shift 2
           break
         fi
@@ -143,10 +154,10 @@ dispatch(){
     exit
   fi
 
-  local action=$(cfg_get action none)
+  local action=$(cfg_get "action" "none")
   case "$action" in
     create)
-      dispatch_snapshot
+      dispatch_snapshot "$1"
       break
       ;;
     *)
@@ -157,10 +168,20 @@ dispatch(){
 }
 
 dispatch_snapshot(){
-  local tag=$(cfg_get tag latest)
-  local group=$(cfg_get group *)
-  snapshot_create $group $tag
-  exit $?
+
+  confman_process $(cfg_get "confman")
+  exit 
+
+  # create snapshot
+  if [ "$1" = "create" ]; then
+    local namespace group tag
+    namespace=$(cfg_get "namespace" "default")
+    group=$(cfg_get "group" "*")
+    tag=$(cfg_get "tag" "latest")
+    snapshot_create "$namespace" "$group" "$tag"
+    exit $?
+  fi
+
 }
 
 init $@

@@ -9,28 +9,21 @@ snapshot_id(){
 # int snapshot_create (tag)
 ##
 snapshot_initdir(){
-  if [ ! -d $1 ]; then
-    mkdir -p $1
+  if [ ! -d "$1" ]; then
+    mkdir -p "$1"
   fi
 }
 
 snapshot_create(){
-  local cachedir snapshotid group=$1 tag=$2
+  local namespace="$1" group="$2" tag="$3"
   
-  snapshotid=$(snapshot_id)
-  cachedir=$(cfg_get cachedir)
+  echo "snapshot create called for <ns:$namespace> <group:$group> <tag:$tag>"
+  #return 0
 
-   
-  echo "snapshot create called for $group:$tag and cachedir $cachedir"
-  return 0
+  #snapshot_initdir $cachedir/$snapshotid
 
-  snapshot_initdir $cachedir/$snapshotid
-
-  buf=$(parse)
-  eval "$buf"
-  declare -F | grep '__cm'
-  export CACHEDIR=$cachedir
-  export SRCDIR=$(pwd)
-  export SNAPSHOTID=$snapshotid
-  __cm_vim
+  #export CACHEDIR=$cachedir
+  #export SRCDIR=$(pwd)
+  #export SNAPSHOTID=$snapshotid
+  #__cm_vim
 }

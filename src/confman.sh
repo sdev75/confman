@@ -27,7 +27,7 @@ confman_lookup(){
 
 # int confman_parse (filename)
 # Parse configuration and output processed data
-confman_process(){
+confman_parse(){
   script=('
 #include confman.awk
   ')
@@ -36,4 +36,11 @@ confman_process(){
   local res=$?
   echo "$buf"
   return $(( $res ))
+}
+
+confman_process(){
+  buf=$(confman_parse "$1")
+  eval "$buf"
+  declare -F | grep -o '__cm_.*'
+
 }
