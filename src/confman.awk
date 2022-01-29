@@ -29,7 +29,7 @@ BEGIN {
    
     if (NF == 1){
       if ($1 == "}"){
-        print $1
+        #print $1
         next
       }
       cmd = "add"
