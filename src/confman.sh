@@ -27,7 +27,7 @@ confman_lookup(){
 
 # int confman_parse (filename)
 # Parse configuration and output processed data
-confman_parse_(){
+confman_parse(){
   local scriopt buf res
   script=('
 #include confman.awk
@@ -39,18 +39,14 @@ confman_parse_(){
   return $(( $res ))
 }
 
-confman_parse(){
+confman_parse_and_eval(){
   local buf IFS
-  buf=$(confman_parse_ "$1")
+  buf=$(confman_parse "$1")
   if [ $? -ne 0 ]; then
     return 1
   fi
 
   eval "$buf"
-  echo "$buf"
-
-
-  
 }
 
 CONFMAN_FUNC_PREFIX='__cm_'

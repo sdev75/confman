@@ -1,6 +1,6 @@
 
 function getfilename (groupid){
-  return "${CACHEDIR}/${SNAPSHOTID}/" groupid ".tar"
+  return "${CM_DSTDIR}/" groupid ".tar"
 }
 
 function gettarcmd (src, dst){

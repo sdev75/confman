@@ -8,8 +8,8 @@ cfg_buf_=""
 # if [ $? -ne 0 ]; echo "key does not exist"; fi
 # 
 cfg_get(){
-  if [ -z $1 ]; then
-    echo $cfg_buf_
+  if [ -z "$1" ]; then
+    echo -ne "$cfg_buf_"
     return 0
   fi
 
@@ -18,20 +18,19 @@ cfg_get(){
     local IFS=$'\036'
     read -r -a a <<< "$pair"
     if [ "${a[0]}" = "$1" ]; then
-      echo ${a[1]}
+      echo -ne "${a[1]}"
       return 0
     fi
   done
-  if [ ! -z $2 ]; then
-    echo $2
+  if [ ! -z "$2" ]; then
+    echo -ne "$2"
   fi
   return 1
 }
 
 cfg_set(){
-  cfg_unset $1
-  local buf="$1\x1e$2\x1d"
-  cfg_buf_+=$(echo -e $buf)
+  cfg_unset "$1"
+  cfg_buf_="${cfg_buf_}$(echo -ne "$1\x1e$2\x1d")"
 }
 
 cfg_unset(){
@@ -39,12 +38,12 @@ cfg_unset(){
     return 0
   fi
 
-  cfg_buf_=$(echo -e $cfg_buf_ | sed "s/$1\x1e[^\x1d]*\x1d//")
+  cfg_buf_=$(echo -ne "$cfg_buf_" | sed "s/$1\x1e[^\x1d]*\x1d//")
   return 0
 }
 
 cfg_hexdump(){
-  echo -e $cfg_buf_ | hexdump -C
+  echo -ne "$cfg_buf_" | hexdump -C
 }
 
 # turn a flag on using a specific mask
@@ -52,7 +51,7 @@ cfg_hexdump(){
 cfg_setflags(){
   local flags=$(( $(cfg_get $1) ))
   local mask=$(( $2 ))
-  cfg_set $1 $(( $flags | $mask ))
+  cfg_set "$1" $(( $flags | $mask ))
 }
 
 # check if a flag is set

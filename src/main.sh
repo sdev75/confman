@@ -139,64 +139,48 @@ init(){
 }
 
 dispatch(){
-  local buf
-  local filename=$(cfg_get confman)
   
-  # Parse and process configuration file
-  buf=$(confman_process $filename)
-  if [ $? -ne 0 ]; then
-    errmsg "An error has occurred while processing '$filename'"
-  fi
- 
   # Print processed conf without proceeding further
-  if cfg_testflags opts $F_PARSE_ONLY; then
+  if cfg_testflags "opts" "$F_PARSE_ONLY"; then
+    # Parse and process configuration file
+    buf=$(confman_parse $(cfg_get confman))
+    if [ $? -ne 0 ]; then
+      errmsg "An error has occurred while processing '$filename'"
+    fi
     echo "$buf"
     exit
   fi
 
-  local action=$(cfg_get "action" "none")
+  action=$(cfg_get "action" "none")
   case "$action" in
     create)
-      dispatch_snapshot "$1"
-      break
+      dispatch_snapshot "$action"
       ;;
     *)
       errmsg "No route for the action requested"
-      exit 1
       ;;
   esac
 }
 
 dispatch_snapshot(){
-
-  confman_parse $(cfg_get "confman")
+  confman_parse_and_eval $(cfg_get "confman")
   if [ $? -ne 0 ]; then
     errmsg "An error has occurred while parsing the configuration file"
-    exit $?
+    return $?
   fi
-
-  local name
-
-  functions=($(confman_getfunctions))
-  for fun in "${functions[@]}"; do
-    echo "fun is $fun"
-  done
-  name=$(confman_getfunction "vim")
-  echo $?
-  echo $name
-  exit
-
+  
   # create snapshot
   if [ "$1" = "create" ]; then
     local namespace group tag
     namespace=$(cfg_get "namespace" "default")
-    group=$(cfg_get "group" "*")
+    group=$(cfg_get "group" "")
     tag=$(cfg_get "tag" "latest")
 
     snapshot_create "$namespace" "$group" "$tag"
-    exit $?
+    return $?
   fi
 
+  return 0
 }
 
 init $@
