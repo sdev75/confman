@@ -28,7 +28,7 @@ confman_lookup(){
 # int confman_parse (filename)
 # Parse configuration and output processed data
 confman_parse(){
-  local scriopt buf res
+  local script buf res
   script=('
 #include confman.awk
   ')

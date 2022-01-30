@@ -57,11 +57,31 @@ snapshot_create(){
   #__cm_vim
 }
 
+snapshot_fmt_ls(){
+  local buf
+  buf=('
+#include fmt_ls.awk
+  ')
+  echo "$buf"
+}
+
+snapshot_ls_(){
+  local buf
+  buf=$(ls -ap "$1" | grep -v '/$' | grep ".tar$" \
+    | awk -v current_dir="$1" "$(snapshot_fmt_ls)" \
+    | column -s ":" -t)
+  echo "$buf"
+}
+
 snapshot_ls(){
   local namespace group tag cachedir
 
   namespace="$1"
   cachedir=$(cfg_get "cachedir")
-  echo "$(ls -laA "$cachedir/$namespace")"
+
+  #echo "$(ls -laA "$cachedir/$namespace")"
+
+  echo "$(snapshot_ls_ "$cachedir/$namespace")"
+
 
 }
