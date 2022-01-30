@@ -105,17 +105,28 @@ init_parseopts(){
         fi
         shift
         ;;
+      ls)
+        cfg_set "action" "ls"
+        if [ ! -z "$2" ]; then
+          group="$2"
+          cfg_set "group" "$group"
+          shift 2
+          break
+        fi
+        
+        shift
+        ;;
       *)
         shift
         ;;
     esac
-    if [ -z $@ ]; then break; fi
+    if [ -z "$@" ]; then break; fi
   done
 }
 
 init(){
   init_flags
-  init_parseopts $@
+  init_parseopts "$@"
   init_cachedir $(cfg_get cachedir $HOME/.cache/confman)
   
   # includedir & lookup
@@ -156,6 +167,9 @@ dispatch(){
     create)
       dispatch_snapshot "$action"
       ;;
+    ls)
+      dispatch_snapshot "$action"
+      ;;
     *)
       errmsg "No route for the action requested"
       ;;
@@ -163,11 +177,6 @@ dispatch(){
 }
 
 dispatch_snapshot(){
-  confman_parse_and_eval $(cfg_get "confman")
-  if [ $? -ne 0 ]; then
-    errmsg "An error has occurred while parsing the configuration file"
-    return $?
-  fi
   
   # create snapshot
   if [ "$1" = "create" ]; then
@@ -176,11 +185,28 @@ dispatch_snapshot(){
     group=$(cfg_get "group" "")
     tag=$(cfg_get "tag" "latest")
 
+    confman_parse_and_eval $(cfg_get "confman")
+    if [ $? -ne 0 ]; then
+      errmsg "An error has occurred while parsing the configuration file"
+      return $?
+    fi
+
     snapshot_create "$namespace" "$group" "$tag"
+    return $?
+  fi
+
+  # list snapshots
+  if [ "$1" = "ls" ]; then
+    local namespace group tag
+    namespace=$(cfg_get "namespace" "default")
+    group=$(cfg_get "group" "")
+    tag=$(cfg_get "tag" "latest")
+
+    snapshot_ls "$namespace" "$group" "$tag"
     return $?
   fi
 
   return 0
 }
 
-init $@
+init "$@"

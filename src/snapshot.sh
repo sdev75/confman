@@ -56,3 +56,12 @@ snapshot_create(){
   #export SNAPSHOTID=$snapshotid
   #__cm_vim
 }
+
+snapshot_ls(){
+  local namespace group tag cachedir
+
+  namespace="$1"
+  cachedir=$(cfg_get "cachedir")
+  echo "$(ls -laA "$cachedir/$namespace")"
+
+}
