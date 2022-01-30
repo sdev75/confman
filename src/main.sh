@@ -87,17 +87,19 @@ init_parseopts(){
         cfg_set "action" "create"
         local namespace group
         if [ ! -z "$2" ]; then
-          if [ $(expr index "$2" ":") ]; then
-            local IFS=':'
-            read -r -a pair <<< "$2"
-            namespace=${pair[0]}
-            group=${pair[1]}
-            cfg_set "namespace" "${pair[0]}"
-            cfg_set "group" "${pair[1]}"
-          else
-            namespace="default"
-            group=$2
-          fi
+          group="$2"
+          cfg_set "group" "$group"
+          #if [ $(expr index "$2" ":") ]; then
+          #  local IFS=':'
+          #  read -r -a pair <<< "$2"
+          #  namespace=${pair[0]}
+          #  group=${pair[1]}
+          #  cfg_set "namespace" "${pair[0]}"
+          #  cfg_set "group" "${pair[1]}"
+          #else
+          #  namespace="default"
+          #  group=$2
+          #fi
           shift 2
           break
         fi
@@ -109,8 +111,6 @@ init_parseopts(){
     esac
     if [ -z $@ ]; then break; fi
   done
-  echo $opts
-  echo $@
 }
 
 init(){
@@ -169,8 +169,22 @@ dispatch(){
 
 dispatch_snapshot(){
 
-  confman_process $(cfg_get "confman")
-  exit 
+  confman_parse $(cfg_get "confman")
+  if [ $? -ne 0 ]; then
+    errmsg "An error has occurred while parsing the configuration file"
+    exit $?
+  fi
+
+  local name
+
+  functions=($(confman_getfunctions))
+  for fun in "${functions[@]}"; do
+    echo "fun is $fun"
+  done
+  name=$(confman_getfunction "vim")
+  echo $?
+  echo $name
+  exit
 
   # create snapshot
   if [ "$1" = "create" ]; then
@@ -178,6 +192,7 @@ dispatch_snapshot(){
     namespace=$(cfg_get "namespace" "default")
     group=$(cfg_get "group" "*")
     tag=$(cfg_get "tag" "latest")
+
     snapshot_create "$namespace" "$group" "$tag"
     exit $?
   fi

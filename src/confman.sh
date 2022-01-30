@@ -27,21 +27,48 @@ confman_lookup(){
 
 # int confman_parse (filename)
 # Parse configuration and output processed data
-confman_parse(){
+confman_parse_(){
+  local scriopt buf res
   script=('
 #include confman.awk
   ')
 
-  buf=$(awk "$script" $1)
-  local res=$?
+  buf=$(awk "$script" "$1")
+  res=$?
   echo "$buf"
   return $(( $res ))
 }
 
-confman_process(){
-  buf=$(confman_parse "$1")
+confman_parse(){
+  local buf IFS
+  buf=$(confman_parse_ "$1")
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
   eval "$buf"
   echo "$buf"
-  declare -F | grep -o '__cm_.*'
 
+
+  
 }
+
+CONFMAN_FUNC_PREFIX='__cm_'
+
+# int getfunction(name)
+confman_getfunction(){
+  local name
+  name=$1
+  while read line; do
+    if [ "$line" = "${CONFMAN_FUNC_PREFIX}${name}" ]; then
+      echo $line
+      return 0
+    fi
+  done <<< $(confman_getfunctions "$name")
+  return 1
+}
+
+confman_getfunctions(){
+  echo "$(declare -F | grep -o "${CONFMAN_FUNC_PREFIX}${1}"'.*')"
+}
+

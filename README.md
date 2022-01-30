@@ -16,6 +16,25 @@ vim {
 
 The above directives will instruct `confman` to create a snapshot of the files within the brakets and tar.gz them for you
 
+## Anatomy of configuration file
+
+A configuration file acts as set of rules to map several files into groups or collections. These can be aggregated further using namespaces. We will see how to do this soon.
+
+Here is a pseudo configuration data:
+
+```
+<group1> {
+  relative/path/to/my/file.ext
+  /absolute/path/to/my/other/file.ext
+  directories/end/up/with/slashes/
+}
+
+<group2> {
+  <file>
+  <directory>/
+}
+```
+
 ## Basic usage
 
 Confman can be run directly using the command line.
