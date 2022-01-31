@@ -15,9 +15,13 @@ snapshot_initdir(){
   fi
 }
 
+snapshot_getdestdir(){
+  echo "$(cfg_get "$cachedir")/$1"
+}
+
 snapshot_create(){
   local namespace name tag buf
-
+ 
   namespace="$1"
   name="$2"
   tag="$3"
@@ -29,16 +33,25 @@ snapshot_create(){
   fi
 
   echo "snapshot create called for <ns:$namespace> <name:$name> <tag:$tag>"
-  exit  
-  local cachedir dstdir
-  cachedir=$(cfg_get "cachedir")
-  dstdir="$cachedir/$namespace"
 
+  local destdir
+  destdir=$(snapshot_getdestdir "$namespace")
   if [ -z "$name" ]; then
     errmsg "You must specify a name"
     return 1
   fi
-
+  
+  local records fields data
+  data=$(confman_getname "$buf" "$name")
+  records=$(confman_read_records "$data")
+  echo "Processing $name with $namespace"
+  for record in ${records[@]}; do
+    fields=($(confman_read_fields "$record"))
+    if [ "${fields[0]}" = "add" ]; then
+      echo "filename to tar is: '${fields[1]}'"
+    fi
+  done
+  exit
   local fn
   fn=$(confman_getfunction "$name")
   if [ $? -ne 0 ]; then

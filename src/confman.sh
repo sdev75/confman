@@ -50,17 +50,20 @@ confman_parse(){
   return 0
 }
 
+# We use x1e and x1d as record and field separator respectively
+CONFMAN_RS=$'\x1e'
+CONFMAN_FS=$'\x1d'
 
 confman_read_records(){
   local IFS records
-  IFS=$'\x1e'
+  IFS=$CONFMAN_RS
   read -a records <<< $(echo -ne "$1")
   echo -ne "${records[@]}"
 }
 
 confman_read_fields(){
   local IFS fields
-  IFS=$'\x1d'
+  IFS=$CONFMAN_FS
   read -a fields <<< $(echo -ne "$1")
   echo -ne "${fields[@]}"
 }
@@ -68,10 +71,10 @@ confman_read_fields(){
 confman_print(){
   local records fields
   local name action filename flags
-
-  # We use x1e and x1d as record and field separator respectively
-  rs=$'\x1e'
-  fs=$'\x1d'
+  local rs fs
+  
+  rs=$CONFMAN_RS
+  fs=$CONFMAN_FS
 
   # Print labels
   echo -e "NAME${fs}ACTION${fs}FILENAME${fs}FLAGS" 
@@ -95,4 +98,36 @@ confman_print(){
   # buf should be echoed using -e and -n flags
   #buf=$(echo -ne $1)
   
+}
+
+# int getname(buf, name)
+confman_getname(){
+  local records fields
+  local rs fs name
+  
+  rs=$CONFMAN_RS
+  fs=$CONFMAN_FS
+  name="$2"
+
+  records=$(confman_read_records "$(echo -ne $1)")
+  for record in ${records[@]}; do
+    
+    fields=($(confman_read_fields "$record"))
+    if [ ${#fields[@]} -eq 1 ]; then
+      if [ "$fields[0]}" != "$name" ]; then
+        continue
+      fi
+      name="${fields[0]}"
+      continue
+    fi
+
+    if [ -z $name ]; then
+      continue
+    fi
+
+    action="${fields[0]}"
+    filename="${fields[1]}"
+    flags=$(( "${fields[2]}" ))
+    echo -ne "$action${fs}$filename${fs}$flags${rs}"
+  done
 }
