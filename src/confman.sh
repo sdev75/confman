@@ -1,20 +1,22 @@
-confman_lookup_(){
+# Recursive command
+# Will traverse path to the root until a .confman is found
+confman_resolve_(){
   if test -e "$1/.confman"; then
     echo "$1/.confman"
     return 0
   fi
 
-  # traverse path until .confman is found
+  # Stop at root node '/'
   if [ "/" = "$1" ]; then
     return 1
   fi
-  confman_lookup_ $(dirname "$1")
+  confman_resolve_ $(dirname "$1")
 }
 
-confman_lookup(){
+confman_resolve(){
   local includedir filename
   includedir="$1"
-  filename=$(confman_lookup_ "$includedir")
+  filename=$(confman_resolve_ "$includedir")
   if [ $? -eq 1 ]; then
     return 1
   fi
@@ -48,19 +50,37 @@ confman_parse(){
   return 0
 }
 
-confman_print(){
-  local buf name action filename flags
-  buf=$(echo -ne $1)
- # echo -ne $buf | hexdump -C; exit 
+
+confman_read_records(){
+  local IFS records
   IFS=$'\x1e'
+  read -a records <<< $(echo -ne "$1")
+  echo -ne "${records[@]}"
+}
+
+confman_read_fields(){
+  local IFS fields
+  IFS=$'\x1d'
+  read -a fields <<< $(echo -ne "$1")
+  echo -ne "${fields[@]}"
+}
+
+confman_print(){
+  local records fields
+  local name action filename flags
+
+  # We use x1e and x1d as record and field separator respectively
   rs=$'\x1e'
   fs=$'\x1d'
-  
+
+  # Print labels
   echo -e "NAME${fs}ACTION${fs}FILENAME${fs}FLAGS" 
-  read -a records <<< $buf
-  for record in "${records[@]}"; do
-    IFS=$'\x1d'
-    read -r -a fields <<< $(echo -ne "$record" | xargs)
+  
+  # Print formatted data using records and fields
+  records=$(confman_read_records "$(echo -ne $1)")
+  for record in ${records[@]}; do
+    
+    fields=($(confman_read_fields "$record"))
     if [ ${#fields[@]} -eq 1 ]; then
       name="${fields[0]}"
       continue
@@ -70,39 +90,9 @@ confman_print(){
     filename="${fields[1]}"
     flags=$(( "${fields[2]}" ))
     echo -e "$name${fs}$action${fs}$filename${fs}$flags"
-
-  done
-  exit
-
-  for record in "$buf"; do
-    IFS=$'\x1d'
-    read -r -a fields <<< "$record"
-    continue    
-#if [ ${#fields[@]} -eq 1 ]; then
-    #  name="${fields[0]}"
-    #  continue
-    #fi
-    
   done
 
+  # buf should be echoed using -e and -n flags
+  #buf=$(echo -ne $1)
+  
 }
-
-CONFMAN_FUNC_PREFIX='__cm_'
-
-# int getfunction(name)
-confman_getfunction(){
-  local name
-  name=$1
-  while read line; do
-    if [ "$line" = "${CONFMAN_FUNC_PREFIX}${name}" ]; then
-      echo $line
-      return 0
-    fi
-  done <<< $(confman_getfunctions "$name")
-  return 1
-}
-
-confman_getfunctions(){
-  echo "$(declare -F | grep -o "${CONFMAN_FUNC_PREFIX}${1}"'.*')"
-}
-

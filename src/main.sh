@@ -128,7 +128,7 @@ init(){
   #
   local includedir filename
   includedir=$(dirname $(cfg_get "confman" "$PWD/.confman"))
-  filename=$(confman_lookup "$includedir")
+  filename=$(confman_resolve "$includedir")
   if [ $? -eq 1 ]; then
     errmsg "Unable to find .confman file in '$includedir'"
     exit 1
@@ -137,7 +137,6 @@ init(){
   #
   # Save current .confman filename
   cfg_set "confman" "$filename"
-  echo "Using $(cfg_get confman)"
   dispatch
 }
 
@@ -145,6 +144,7 @@ dispatch(){
   local buf
   # Print processed conf without proceeding further
   if cfg_testflags "opts" "$F_PARSE_ONLY"; then
+    echo "Using $(cfg_get confman)"
     # Parse and process configuration file
     buf=$(confman_parse $(cfg_get confman))
     if [ $? -ne 0 ]; then
@@ -177,14 +177,8 @@ dispatch_snapshot(){
   if [ "$1" = "create" ]; then
     local namespace name tag
     namespace=$(cfg_get "namespace" "default")
-    group=$(cfg_get "name" "")
+    name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
-
-    confman_parse_and_eval $(cfg_get "confman")
-    if [ $? -ne 0 ]; then
-      errmsg "An error has occurred while parsing the configuration file"
-      return $?
-    fi
 
     snapshot_create "$namespace" "$name" "$tag"
     return $?
@@ -194,7 +188,7 @@ dispatch_snapshot(){
   if [ "$1" = "ls" ]; then
     local namespace name tag
     namespace=$(cfg_get "namespace" "default")
-    group=$(cfg_get "name" "")
+    name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
 
     snapshot_ls "$namespace" "$name" "$tag"

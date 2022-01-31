@@ -16,14 +16,20 @@ snapshot_initdir(){
 }
 
 snapshot_create(){
-  local namespace name tag
+  local namespace name tag buf
 
   namespace="$1"
   name="$2"
   tag="$3"
 
+  buf=$(confman_parse $(cfg_get "confman"))
+  if [ $? -ne 0 ]; then
+    errmsg "An error has occurred while parsing the configuration file"
+    return $?
+  fi
+
   echo "snapshot create called for <ns:$namespace> <name:$name> <tag:$tag>"
-  
+  exit  
   local cachedir dstdir
   cachedir=$(cfg_get "cachedir")
   dstdir="$cachedir/$namespace"
