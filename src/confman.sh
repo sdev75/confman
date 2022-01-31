@@ -14,9 +14,9 @@ confman_lookup_(){
 }
 
 confman_lookup(){
-  local filename
-  local includedir=$1
-  filename=$(confman_lookup_ $includedir)
+  local includedir filename
+  includedir="$1"
+  filename=$(confman_lookup_ "$includedir")
   if [ $? -eq 1 ]; then
     return 1
   fi

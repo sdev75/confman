@@ -16,27 +16,27 @@ snapshot_initdir(){
 }
 
 snapshot_create(){
-  local namespace group tag
+  local namespace name tag
 
   namespace="$1"
-  group="$2"
+  name="$2"
   tag="$3"
 
-  echo "snapshot create called for <ns:$namespace> <group:$group> <tag:$tag>"
+  echo "snapshot create called for <ns:$namespace> <name:$name> <tag:$tag>"
   
   local cachedir dstdir
   cachedir=$(cfg_get "cachedir")
   dstdir="$cachedir/$namespace"
 
-  if [ -z "$group" ]; then
-    errmsg "You must specify a group"
+  if [ -z "$name" ]; then
+    errmsg "You must specify a name"
     return 1
   fi
 
   local fn
-  fn=$(confman_getfunction "$group")
+  fn=$(confman_getfunction "$name")
   if [ $? -ne 0 ]; then
-    errmsg "$group does not exist"
+    errmsg "$name does not exist"
     return 1
   fi
 
@@ -49,12 +49,6 @@ snapshot_create(){
   CM_DSTDIR="$dstdir"
   eval "$fn"
 #snapshot_initdir "$dstdir"
-
-
-  #export CACHEDIR=$cachedir
-  #export SRCDIR=$(pwd)
-  #export SNAPSHOTID=$snapshotid
-  #__cm_vim
 }
 
 snapshot_fmt_ls(){
@@ -67,9 +61,12 @@ snapshot_fmt_ls(){
 
 snapshot_ls_(){
   local buf
-  buf=$(ls -ap "$1" | grep -v '/$' | grep ".tar$" \
-    | awk -v current_dir="$1" "$(snapshot_fmt_ls)" \
-    | column -s ":" -t)
+  buf=$(ls -apt "$1" | grep -v '/$' | grep ".tar\|.tar.gz$" \
+    | awk \
+     -v current_dir="$1" \
+     -v ofs="\x1d" \
+     "$(snapshot_fmt_ls)" \
+    | column -s $'\x1d' -t)
   echo "$buf"
 }
 

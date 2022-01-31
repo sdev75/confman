@@ -26,11 +26,6 @@ init_cachedir(){
   cfg_set cachedir $cachedir
 }
 
-checksum(){
-  local res=$(sha256sum "$1" | awk 'print $1}')
-  return $res
-}
-
 init_flags(){
   cfg_setflags opts 0
   readonly F_CONFMAN_FILE=$((1 << 0))
@@ -85,10 +80,10 @@ init_parseopts(){
     case "$1" in
       create)
         cfg_set "action" "create"
-        local namespace group
+        local namespace name tag
         if [ ! -z "$2" ]; then
-          group="$2"
-          cfg_set "group" "$group"
+          name="$2"
+          cfg_set "name" "$name"
           #if [ $(expr index "$2" ":") ]; then
           #  local IFS=':'
           #  read -r -a pair <<< "$2"
@@ -108,8 +103,8 @@ init_parseopts(){
       ls)
         cfg_set "action" "ls"
         if [ ! -z "$2" ]; then
-          group="$2"
-          cfg_set "group" "$group"
+          name="$2"
+          cfg_set "name" "$name"
           shift 2
           break
         fi
@@ -134,8 +129,8 @@ init(){
   # It can be requested via opt
   # By default '$PWD/.confman' is inspected
   #
-  local includedir=$(dirname $(cfg_get confman $PWD/.confman))
-  local filename
+  local includedir filename
+  includedir=$(dirname $(cfg_get confman $PWD/.confman))
   filename=$(confman_lookup $includedir)
   if [ $? -eq 1 ]; then
     errmsg "Unable to find .confman file in '$includedir'"
@@ -144,13 +139,13 @@ init(){
   
   #
   # Save current .confman filename
-  cfg_set confman $filename
+  cfg_set "confman" "$filename"
   echo "Using $(cfg_get confman)"
   dispatch
 }
 
 dispatch(){
-  
+  local buf
   # Print processed conf without proceeding further
   if cfg_testflags "opts" "$F_PARSE_ONLY"; then
     # Parse and process configuration file
@@ -171,7 +166,7 @@ dispatch(){
       dispatch_snapshot "$action"
       ;;
     *)
-      errmsg "No route for the action requested"
+      errmsg "No route available for action '$action'"
       ;;
   esac
 }
@@ -180,9 +175,9 @@ dispatch_snapshot(){
   
   # create snapshot
   if [ "$1" = "create" ]; then
-    local namespace group tag
+    local namespace name tag
     namespace=$(cfg_get "namespace" "default")
-    group=$(cfg_get "group" "")
+    group=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
 
     confman_parse_and_eval $(cfg_get "confman")
@@ -191,18 +186,18 @@ dispatch_snapshot(){
       return $?
     fi
 
-    snapshot_create "$namespace" "$group" "$tag"
+    snapshot_create "$namespace" "$name" "$tag"
     return $?
   fi
 
   # list snapshots
   if [ "$1" = "ls" ]; then
-    local namespace group tag
+    local namespace name tag
     namespace=$(cfg_get "namespace" "default")
-    group=$(cfg_get "group" "")
+    group=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
 
-    snapshot_ls "$namespace" "$group" "$tag"
+    snapshot_ls "$namespace" "$name" "$tag"
     return $?
   fi
 
