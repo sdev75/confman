@@ -80,10 +80,8 @@ init_parseopts(){
     case "$1" in
       create)
         cfg_set "action" "create"
-        local namespace name tag
         if [ ! -z "$2" ]; then
-          name="$2"
-          cfg_set "name" "$name"
+          cfg_set "name" "$2"
           #if [ $(expr index "$2" ":") ]; then
           #  local IFS=':'
           #  read -r -a pair <<< "$2"
@@ -103,8 +101,7 @@ init_parseopts(){
       ls)
         cfg_set "action" "ls"
         if [ ! -z "$2" ]; then
-          name="$2"
-          cfg_set "name" "$name"
+          cfg_set "name" "$2"
           shift 2
           break
         fi
@@ -130,8 +127,8 @@ init(){
   # By default '$PWD/.confman' is inspected
   #
   local includedir filename
-  includedir=$(dirname $(cfg_get confman $PWD/.confman))
-  filename=$(confman_lookup $includedir)
+  includedir=$(dirname $(cfg_get "confman" "$PWD/.confman"))
+  filename=$(confman_lookup "$includedir")
   if [ $? -eq 1 ]; then
     errmsg "Unable to find .confman file in '$includedir'"
     exit 1
@@ -153,7 +150,10 @@ dispatch(){
     if [ $? -ne 0 ]; then
       errmsg "An error has occurred while processing '$filename'"
     fi
-    echo "$buf"
+    #echo "Printing parsed configuration formatted raw data below:"
+    #echo "$buf"
+    #echo "Formatted output:"
+    confman_print "$buf" | column -s $'\x1d' -t
     exit
   fi
 
