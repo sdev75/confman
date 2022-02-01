@@ -100,31 +100,44 @@ confman_print(){
   
 }
 
+# Get actions for specific name
+# The name is not the best, it might require refactoring?
 # int getname(buf, name)
 confman_getname(){
   local records fields
-  local rs fs name
+  local rs fs name_ name
   
   rs=$CONFMAN_RS
   fs=$CONFMAN_FS
-  name="$2"
+  name_="$2"
 
   records=$(confman_read_records "$(echo -ne $1)")
   for record in ${records[@]}; do
     
     fields=($(confman_read_fields "$record"))
+
+    # skip all fields with count > 1
+    # Format is as follows:
+    # <name>{RS}
+    # <action>{FS}<foo>{FS}<bar>{RS}
+    # <action>{FS}<foo>{FS}<bar>{RS}
+    # When a record has only 1 field, it defines an idetifier
+    # for the fields that follow its declaration
     if [ ${#fields[@]} -eq 1 ]; then
-      if [ "$fields[0]}" != "$name" ]; then
-        continue
+      if [ ! -z "$name" ]; then
+        # already found, break
+        break
       fi
-      name="${fields[0]}"
-      continue
+      if [ "${fields[0]}" = "$name_" ]; then
+        name="${fields[0]}"
+      fi
     fi
 
-    if [ -z $name ]; then
+    # Skip to next record if the first field is not matching with $name
+    if [ -z "$name" ]; then
       continue
     fi
-
+    
     action="${fields[0]}"
     filename="${fields[1]}"
     flags=$(( "${fields[2]}" ))
