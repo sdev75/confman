@@ -30,12 +30,13 @@ init_flags(){
   cfg_setflags opts 0
   readonly F_CONFMAN_FILE=$((1 << 0))
   readonly F_PARSE_ONLY=$((2 << 0))
+  readonly F_DRYRUN=$((4 << 0))
 }
 
 init_parseopts(){
   local shortargs longargs opts
   shortargs="hf:t:"
-  longargs="help,file:,parse,cachedir:tag:"
+  longargs="help,file:,parse,cachedir:,tag:,dryrun"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
   if [ $(( $? )) -ne 0 ]; then
     exit $?
@@ -63,6 +64,10 @@ init_parseopts(){
       -t|--tag)
         cfg_set tag $2
         shift 2
+        ;;
+      --dryrun)
+        cfg_set opts $F_DRYRUN
+        shift
         ;;
       --)
         shift
@@ -119,7 +124,7 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts "$@"
-  init_cachedir $(cfg_get cachedir $HOME/.cache/confman)
+  init_cachedir $(cfg_get "cachedir" "$HOME/.cache/confman")
   
   # includedir & lookup
   # Determines the include path of '.confman' file
@@ -179,7 +184,7 @@ dispatch_snapshot(){
     namespace=$(cfg_get "namespace" "default")
     name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
-
+    
     snapshot_create "$namespace" "$name" "$tag"
     return $?
   fi
