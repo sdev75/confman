@@ -20,3 +20,8 @@ strip:
 
 install: ${PROG}
 	install -m 755 build/confman ${PREFIX}/bin
+
+shellcheck: ${PROG}
+	docker run \
+		-v "$(shell pwd)/src:/tmp/confman/src:ro" \
+		shellcheck sh -c 'shellcheck --shell bash /tmp/confman/src/*.sh'

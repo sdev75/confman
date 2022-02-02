@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env shs
 
 #include misc.sh
 #include cfg.sh
@@ -12,22 +12,22 @@ init_cachedir(){
   local cachedir=$1
 
   # CacheDir must exists to operate correctly
-  if [ ! -d $cachedir ]; then
+  if [ ! -d "$cachedir" ]; then
     read -rep "$cachedir not found. Shall I create it? (y/n)" -n 1
-    if echo $REPLY | grep -Eq '[yY]'; then
-      mkdir -p $cachedir
+    if echo "$REPLY" | grep -Eq '[yY]'; then
+      mkdir -p "$cachedir"
     else
      errmsg "$cachedir is required to use this program" 
      exit 1
     fi
   fi
 
-  cachedir=$(realpath $cachedir)
-  cfg_set cachedir $cachedir
+  cachedir=$(realpath "$cachedir")
+  cfg_set "cachedir" "$cachedir"
 }
 
 init_flags(){
-  cfg_setflags opts 0
+  cfg_setflags "opts" 0
   readonly F_CONFMAN_FILE=$((1 << 0))
   readonly F_PARSE_ONLY=$((2 << 0))
   readonly F_DRYRUN=$((4 << 0))
@@ -38,7 +38,7 @@ init_parseopts(){
   shortargs="hf:t:"
   longargs="help,file:,parse,cachedir:,tag:,dryrun"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
-  if [ $(( $? )) -ne 0 ]; then
+  if [ $? -ne 0 ]; then
     exit $?
   fi
 
@@ -49,24 +49,24 @@ init_parseopts(){
         help 0
         ;;
       --parse)
-        cfg_setflags opts $F_PARSE_ONLY
+        cfg_setflags "opts" $F_PARSE_ONLY
         shift
         ;;
       --cachedir)
-        cfg_set cachedir $2
+        cfg_set "cachedir" "$2"
         shift 2
         ;;
       -f|--file)
         cfg_setflags opts $F_CONFMAN_FILE
-        cfg_set confman $2
+        cfg_set "confman" "$2"
         shift 2
         ;;
       -t|--tag)
-        cfg_set tag $2
+        cfg_set "tag" "$2"
         shift 2
         ;;
       --dryrun)
-        cfg_set opts $F_DRYRUN
+        cfg_set "opts" $F_DRYRUN
         shift
         ;;
       --)
@@ -85,7 +85,7 @@ init_parseopts(){
     case "$1" in
       create)
         cfg_set "action" "create"
-        if [ ! -z "$2" ]; then
+        if [ -n  "$2" ]; then
           cfg_set "name" "$2"
           #if [ $(expr index "$2" ":") ]; then
           #  local IFS=':'
@@ -105,7 +105,7 @@ init_parseopts(){
         ;;
       ls)
         cfg_set "action" "ls"
-        if [ ! -z "$2" ]; then
+        if [ -n "$2" ]; then
           cfg_set "name" "$2"
           shift 2
           break
@@ -124,7 +124,7 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts "$@"
-  init_cachedir $(cfg_get "cachedir" "$HOME/.cache/confman")
+  init_cachedir "$(cfg_get "cachedir" "$HOME/.cache/confman")"
   
   # includedir & lookup
   # Determines the include path of '.confman' file
@@ -132,9 +132,9 @@ init(){
   # By default '$PWD/.confman' is inspected
   #
   local includedir filename
-  includedir=$(dirname $(cfg_get "confman" "$PWD/.confman"))
+  includedir=$(dirname "$(cfg_get "confman" "$PWD/.confman")")
   filename=$(confman_resolve "$includedir")
-  if [ $? -eq 1 ]; then
+  if [ $? -ne 0 ]; then
     errmsg "Unable to find .confman file in '$includedir'"
     exit 1
   fi
@@ -151,7 +151,7 @@ dispatch(){
   if cfg_testflags "opts" "$F_PARSE_ONLY"; then
     echo "Using $(cfg_get confman)"
     # Parse and process configuration file
-    buf=$(confman_parse $(cfg_get confman))
+    buf=$(confman_parse "$(cfg_get confman)")
     if [ $? -ne 0 ]; then
       errmsg "An error has occurred while processing '$filename'"
     fi
@@ -188,7 +188,7 @@ dispatch_snapshot(){
     snapshot_create "$namespace" "$name" "$tag"
     return $?
   fi
-
+  
   # list snapshots
   if [ "$1" = "ls" ]; then
     local namespace name tag

@@ -22,7 +22,7 @@ cfg_get(){
       return 0
     fi
   done
-  if [ ! -z "$2" ]; then
+  if [ -n "$2" ]; then
     echo -ne "$2"
   fi
   return 1
@@ -34,7 +34,7 @@ cfg_set(){
 }
 
 cfg_unset(){
-  if [ -z $cfg_buf_ ]; then
+  if [ -z "$cfg_buf_" ]; then
     return 0
   fi
 
@@ -49,9 +49,9 @@ cfg_hexdump(){
 # turn a flag on using a specific mask
 # int setflags(flags_key, mask)
 cfg_setflags(){
-  local flags=$(( $(cfg_get $1) ))
+  local flags=$(( $(cfg_get "$1") ))
   local mask=$(( $2 ))
-  cfg_set "$1" $(( $flags | $mask ))
+  cfg_set "$1" $(( flags | mask ))
 }
 
 # check if a flag is set
@@ -66,9 +66,9 @@ cfg_setflags(){
 #    echo "flag not set"
 #  fi
 cfg_testflags(){
-  local flags=$(( $(cfg_get $1) ))
+  local flags=$(( $(cfg_get "$1") ))
   local mask=$(( $2 ))
-  if [ $(( $flags & $mask )) -gt 0 ]; then
+  if [ $(( flags & mask )) -gt 0 ]; then
     return 0
   fi
   return 1

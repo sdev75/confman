@@ -10,7 +10,7 @@ confman_resolve_(){
   if [ "/" = "$1" ]; then
     return 1
   fi
-  confman_resolve_ $(dirname "$1")
+  confman_resolve_ "$(dirname "$1")"
 }
 
 confman_resolve(){
@@ -21,7 +21,7 @@ confman_resolve(){
     return 1
   fi
 
-  echo $filename 
+  echo "$filename"
   return 0
 }
 
@@ -33,10 +33,10 @@ confman_parse_(){
 #include confman.awk
   ')
 
-  buf=$(awk -v fs=$"\x1d" -v rs=$"\x1e" "$script" "$1")
+  buf=$(awk -v fs=$"\x1d" -v rs=$"\x1e" "${script[0]}" "$1")
   res=$?
   echo -ne "$buf"
-  return $(( $res ))
+  return $(( res ))
 }
 
 confman_parse(){
@@ -64,7 +64,7 @@ confman_read_records(){
 confman_read_fields(){
   local IFS fields
   IFS=$CONFMAN_FS
-  read -a fields <<< $(echo -ne "$1")
+  read -r -a fields <<< "$(echo -ne "$1")"
   echo -ne "${fields[@]}"
 }
 
@@ -80,10 +80,10 @@ confman_print(){
   echo -e "NAME${fs}ACTION${fs}FILENAME${fs}FLAGS" 
   
   # Print formatted data using records and fields
-  records=$(confman_read_records "$(echo -ne $1)")
-  for record in ${records[@]}; do
+  records=$(confman_read_records "$(echo -ne "$1")")
+  for record in "${records[@]}"; do
     
-    fields=($(confman_read_fields "$record"))
+    fields=( $(confman_read_fields "$record") )
     if [ ${#fields[@]} -eq 1 ]; then
       name="${fields[0]}"
       continue
@@ -112,6 +112,7 @@ confman_getname(){
   name_="$2"
 
   records=$(confman_read_records "$(echo -ne $1)")
+  
   for record in ${records[@]}; do
     
     fields=($(confman_read_fields "$record"))
@@ -124,7 +125,7 @@ confman_getname(){
     # When a record has only 1 field, it defines an idetifier
     # for the fields that follow its declaration
     if [ ${#fields[@]} -eq 1 ]; then
-      if [ ! -z "$name" ]; then
+      if [ -n "$name" ]; then
         # already found, break
         break
       fi

@@ -24,6 +24,6 @@ errmsg(){
 }
 
 help(){
-  echo "$HELPTEXT"
-  exit $1
+  echo "${HELPTEXT[0]}"
+  exit "$1"
 }
