@@ -63,8 +63,11 @@ snapshot_create(){
     errmsg "An error has occurred while parsing the configuration file"
     return 1
   fi
-  
-# get destination directory for snapshots
+
+  # hex to string
+  buf=$(printf "%s" "$buf" | xxd -p -r)
+ 
+  # get destination directory for snapshots
   destdir=$(snapshot_getdestdir "$namespace")
   snapshot_initdestdir "$destdir"
   errno=$?
@@ -87,33 +90,66 @@ snapshot_create(){
   ##
   # Iterate through parsed configuration data
   local records fields sbuf
+  local parentdir src t1 t2
 
-  # Get records for a specific <name>. Ex. name=vim
-  records=$(confman_read_records \
-    $(confman_getname "$buf" "$name"))
-  
-  # Iterate though every record
-  echo "Processing '$name' with namespace '$namespace'"
-  for record in ${records[@]}; do
-    fields=( $(confman_read_fields "$record") )
-    if [ "${fields[0]}" = "add" ]; then
-      parentdir=$(dirname "${fields[1]}")
-      echo "parentdir is '$parentdir'"
-      sbuf="${sbuf}tar -v --append --file=\"$destdir/$filename.tmp.tar\" -C \"${fields[1]}\" .\n"
+  IFS=$CONFMAN_RS
+  read -r -a records <<< "$buf"
+  for record in "${records[@]}"; do
+    IFS=$CONFMAN_FS
+    read -r -a fields <<< "$record"
+    if [ ${#fields[@]} -eq 1 ]; then
+      #
+      # If name already matched before, this is the end
+      if [ -n "$name_" ]; then
+        break
+      fi
+      #
+      # Match requested name, else keep looping
+      if [ "${fields[0]}" = "$name" ]; then
+        name_="$name"
+        continue
+      fi
     fi
+    #
+    # if there is no match, continue looping
+    if [ -z "$name_" ]; then
+      continue
+    fi
+    #
+    # evaluate variables such as $HOME
+    eval "src="${fields[1]}""
+    parentdir=$(dirname "${src}")
+    t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
+    t2="tar -v --append --file=\"${destdir}/${filename}.tmp\""
+    sbuf="${sbuf}${t2} -C \"$parentdir\" \"$1\"\n"
   done
-
-  # Remove last newline character (\ + n) == 2 chars
-  sbuf="${sbuf::-2}"
 
   if cfg_testflags "opts" "$F_DRYRUN"; then
     echo "Dry-run requested. Commands to be executed shown below:"
-    echo -e "$sbuf"
-    return 0
   fi
 
-  eval "$(echo -e "$sbuf")"
-  exit
+  local cmd cmds res
+  IFS=$'\x0a'
+  read -d '' -r -a cmds <<< $"$(printf "%b" "$sbuf")"
+  for cmd in "${cmds[@]}"; do
+    if cfg_testflags "opts" "$F_DRYRUN"; then
+      echo "$cmd"
+      continue;
+    fi
+
+    # Eval command and store return value in `$res`
+    eval "$cmd"
+    res=$?
+    if [ $res -ne 0 ]; then
+      errmsg "Could not execute command: '$cmd' Errno: $res"
+      break
+    fi
+  done
+
+#  if [ $res -ne 0]; then
+
+
+  return $res
 }
 
 snapshot_fmt_ls(){
@@ -136,11 +172,10 @@ snapshot_ls_(){
 }
 
 snapshot_ls(){
-  local namespace group tag cachedir
+  local namespace cachedir
 
   namespace="$1"
   cachedir=$(cfg_get "cachedir")
 
-  #echo "$(ls -laA "$cachedir/$namespace")"
   snapshot_ls_ "$cachedir/$namespace"
 }

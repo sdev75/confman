@@ -10,7 +10,7 @@ BEGIN {
   cmd = "stat -c \"%n\x1d%U\x1d%G\x1d%A\x1d%W\x1d%Y\" " current_dir "/" $1
   cmd | getline buf
   close(cmd)
- 
+
   FS = ofs
   $0 = buf
   
@@ -18,12 +18,15 @@ BEGIN {
   group=$2
   user=$3
   perms=$4
-  datefmt = "date -d \"@" $5 "\" +\"%Y-%m-%d %H:%M\""
-  datefmt | getline created_at
-  close(datefmt)
+  modified=$5
+  datefmt = "date -d \"@" modified "\" +\"%Y-%m-%d %H:%M\""
 
   datefmt | getline modified_at
   close(datefmt)
-  
-  print perms " " user "/" group,"<size>",modified_at,"<namespace>","<tag>",filename
+ 
+  cmd = "du -k " filename " | cut -f1"
+  cmd | getline size
+  close(cmd)
+
+  print perms " " user "/" group,size "KB",modified_at,"<namespace>","<tag>",filename
 }

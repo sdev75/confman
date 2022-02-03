@@ -1,8 +1,11 @@
+BEGIN {
+  ORS=rs
+}
 {
   if ($0 ~ /[[:alnum:]]+ *{/) { 
     match($0,/^([[:alnum:]]+).*/,matches)
     name = matches[1]
-    actions[name][0] = name rs
+    actions[name][0] = name
     idxcnt[name] = 1
   
   } else {
@@ -18,7 +21,7 @@
     }
     if (action != "") {
       idx= idxcnt[name]
-      actions[name][idx] = action fs filename fs 0 rs
+      actions[name][idx] = action fs filename fs 0
       idxcnt[name] += 1
     }
   }

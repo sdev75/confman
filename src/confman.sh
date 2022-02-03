@@ -34,8 +34,9 @@ confman_parse_(){
   ')
 
   buf=$(awk -v fs=$"\x1d" -v rs=$"\x1e" "${script[0]}" "$1")
+ 
   res=$?
-  echo -ne "$buf"
+  printf "%s" "$buf" | xxd -p
   return $(( res ))
 }
 
@@ -46,7 +47,7 @@ confman_parse(){
     return 1
   fi
 
-  echo -ne "$buf"
+  printf "%s" "$buf"
   return 0
 }
 
@@ -55,10 +56,14 @@ CONFMAN_RS=$'\x1e'
 CONFMAN_FS=$'\x1d'
 
 confman_read_records(){
-  local IFS records
+  local IFS records buf
   IFS=$CONFMAN_RS
-  read -a records <<< $(echo -ne "$1")
-  echo -ne "${records[@]}"
+  buf="$(printf "%s" "$1" | xxd -p -r)"
+  printf "%s" "$buf" | hexdump -C
+  read -r -a records <<< "$buf"
+  printf "%s" "${records[@]}" | hexdump -C
+  exit
+  printf "%s" "${records[@]}"
 }
 
 confman_read_fields(){
@@ -69,21 +74,23 @@ confman_read_fields(){
 }
 
 confman_print(){
-  local records fields
+  local buf records fields
   local name action filename flags
   local rs fs
   
   rs=$CONFMAN_RS
   fs=$CONFMAN_FS
+  
+  buf="$(printf "%s" "$1" | xxd -r -p)"
 
   # Print labels
-  echo -e "NAME${fs}ACTION${fs}FILENAME${fs}FLAGS" 
-  
-  # Print formatted data using records and fields
-  records=$(confman_read_records "$(echo -ne "$1")")
+  printf "%s\n" "NAME${fs}ACTION${fs}FILENAME${fs}FLAGS"
+ 
+  IFS="$rs"
+  read -r -a records <<< "$buf"
   for record in "${records[@]}"; do
-    
-    fields=( $(confman_read_fields "$record") )
+    IFS="$fs"
+    read -r -a fields <<< "$record"
     if [ ${#fields[@]} -eq 1 ]; then
       name="${fields[0]}"
       continue
@@ -91,19 +98,15 @@ confman_print(){
 
     action="${fields[0]}"
     filename="${fields[1]}"
-    flags=$(( "${fields[2]}" ))
-    echo -e "$name${fs}$action${fs}$filename${fs}$flags"
+    flags="${fields[2]}"
+    printf "%s\n" "$name${fs}$action${fs}$filename${fs}$flags"
   done
-
-  # buf should be echoed using -e and -n flags
-  #buf=$(echo -ne $1)
-  
 }
 
 # Get actions for specific name
 # The name is not the best, it might require refactoring?
 # int getname(buf, name)
-confman_getname(){
+confman_getrecordsbyname(){
   local records fields
   local rs fs name_ name
   
@@ -111,10 +114,13 @@ confman_getname(){
   fs=$CONFMAN_FS
   name_="$2"
 
-  records=$(confman_read_records "$(echo -ne $1)")
-  
-  for record in ${records[@]}; do
-    
+  local buf
+  buf=$(printf "%s" "$1" | xxd -p -r)
+  printf "%s" "$buf" | hexdump -C
+  exit
+  records=($(confman_read_records "$(echo -ne $1)"))
+  for record in "${records[@]}"; do
+    echo "record found: $record" 
     fields=($(confman_read_fields "$record"))
 
     # skip all fields with count > 1

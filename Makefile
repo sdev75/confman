@@ -1,6 +1,7 @@
 
 PROG=confman
 PREFIX=/usr/local
+SHELLCHECK_OPTS=--exclude SC2181
 #CPPFLAGS=-I src -x assembler-with-cpp -P -w
 
 all: ${PROG}
@@ -24,4 +25,4 @@ install: ${PROG}
 shellcheck: ${PROG}
 	docker run \
 		-v "$(shell pwd)/src:/tmp/confman/src:ro" \
-		shellcheck sh -c 'shellcheck --shell bash /tmp/confman/src/*.sh'
+		shellcheck sh -c 'shellcheck ${SHELLCHECK_OPTS} --shell bash /tmp/confman/src/*.sh'

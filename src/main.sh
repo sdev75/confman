@@ -1,4 +1,4 @@
-#!/usr/bin/env shs
+#!/usr/bin/env sh
 
 #include misc.sh
 #include cfg.sh
@@ -9,8 +9,9 @@
 # default value to ~/.cache/confman
 # Its possible to pass the value by ENV using CACHEDIR=. confman
 init_cachedir(){
-  local cachedir=$1
+  local cachedir
 
+  cachedir="$1"
   # CacheDir must exists to operate correctly
   if [ ! -d "$cachedir" ]; then
     read -rep "$cachedir not found. Shall I create it? (y/n)" -n 1
@@ -117,7 +118,7 @@ init_parseopts(){
         shift
         ;;
     esac
-    if [ -z "$@" ]; then break; fi
+    if [ -z "$1" ]; then break; fi
   done
 }
 
