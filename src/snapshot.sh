@@ -121,22 +121,19 @@ snapshot_create(){
     parentdir=$(dirname "${src}")
     t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
     t2="tar -v --append --file=\"${destdir}/${filename}.tmp\""
-    sbuf="${sbuf}${t2} -C \"$parentdir\" \"$1\"\n"
+    sbuf="${sbuf}${t2} -C \"$parentdir\" \"$t1\"\n"
   done
 
   if cfg_testflags "opts" "$F_DRYRUN"; then
     echo "Dry-run requested. Commands to be executed shown below:"
+    printf "%b" "$sbuf"
+    return 0
   fi
 
   local cmd cmds res
   IFS=$'\x0a'
   read -d '' -r -a cmds <<< $"$(printf "%b" "$sbuf")"
   for cmd in "${cmds[@]}"; do
-    if cfg_testflags "opts" "$F_DRYRUN"; then
-      echo "$cmd"
-      continue;
-    fi
-
     # Eval command and store return value in `$res`
     eval "$cmd"
     res=$?
