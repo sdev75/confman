@@ -26,7 +26,8 @@ snapshot_getdestdir(){
 # void getfilename (namespace, name, tag)
 snapshot_filename(){
   local namespace name tag
-  read -r namespace name tag <<< "$(echo "$1" "$2" "$3")"
+  IFS=$'\x34'
+  read -r namespace name tag <<< "$(printf "%b" "${1}\x34${2}\x34${3}")"
   echo "${name}_${namespace}_${tag}"
 }
 
@@ -142,7 +143,6 @@ snapshot_create(){
     return $res
   fi
 
-
   # gzip file
   gzip -f -9 --no-name "$destdir/$filename.tmp"
   if [ $? -ne 0 ]; then
@@ -153,18 +153,40 @@ snapshot_create(){
     return $res
   fi
 
+  # perform checksum and move operation
+  digest=$(sha256sum "$destdir/$filename.tmp.gz" | awk '{ print $1 }')
+
+  # verify tarball
+  echo "Verifying tarball '$destdir/$filename.tmp.gz'"
+  gunzip -c "$destdir/$filename.tmp.gz" | tar -t > /dev/null
+  if [ $? -ne 0 ]; then
+    res=$?
+    errmsg "Unable to verify tarball. Errno: $res"
+    return $res
+  fi
+
   # remove previous version file
   IFS=$'\n'
   read -d '' -r -a files <<< $(find "$destdir" -type f -name "$filename-*.tar.gz")
   local file
   for file in "${files[@]}"; do
+    echo "Removing file: '$file'"
     rm "$file"
     res=$?
     if [ $res -ne 0 ]; then
-      errmsg "Remove failed: '$file'. Errno: $res"
+      errmsg "Operation failed: '$file'. Errno: $res"
       break
     fi
   done
+  
+  # make the final move
+  mv "$destdir/$filename.tmp.gz" "$destdir/$filename-$digest.tar.gz"
+  if [ $? -ne 0 ]; then
+    res=$?
+    errmsg "Error while mv operationg for '$destdir/$filename-$digest.tmp.gz'"
+    return $res
+  fi
+
 
   #if [ -f "$destdir/$filename.tar.gz" ]; then
   #  rm "$destdir/$filename.tar.gz"
@@ -175,15 +197,7 @@ snapshot_create(){
   #  fi
   #fi
 
-  # perform checksum and move operation
-  digest=$(sha256sum "$destdir/$filename.tmp.gz" | awk '{ print $1 }')
-  mv "$destdir/$filename.tmp.gz" "$destdir/$filename-$digest.tar.gz"
-  if [ $? -ne 0 ]; then
-    res=$?
-    errmsg "Error while mv operationg for '$destdir/$filename.tmp.gz'"
-    return $res
-  fi
-
+  echo "OK. Snapshot created: '$destdir/$filename-$digest.tar.gz'."
   return $res
 }
 
