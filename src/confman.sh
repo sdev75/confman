@@ -55,24 +55,6 @@ confman_parse(){
 CONFMAN_RS=$'\x1e'
 CONFMAN_FS=$'\x1d'
 
-confman_read_records(){
-  local IFS records buf
-  IFS=$CONFMAN_RS
-  buf="$(printf "%s" "$1" | xxd -p -r)"
-  printf "%s" "$buf" | hexdump -C
-  read -r -a records <<< "$buf"
-  printf "%s" "${records[@]}" | hexdump -C
-  exit
-  printf "%s" "${records[@]}"
-}
-
-confman_read_fields(){
-  local IFS fields
-  IFS=$CONFMAN_FS
-  read -r -a fields <<< "$(echo -ne "$1")"
-  echo -ne "${fields[@]}"
-}
-
 confman_print(){
   local buf records fields
   local name action filename flags

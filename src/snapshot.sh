@@ -26,18 +26,13 @@ snapshot_getdestdir(){
 # void getfilename (namespace, name, tag)
 snapshot_filename(){
   local namespace name tag
-
-  namespace="$1"
-  name="$2"
-  tag="$3"
-
+  read -r namespace name tag <<< "$(echo "$1" "$2" "$3")"
   echo "${name}_${namespace}_${tag}"
 }
 
 # check if snapshot exists
 # int exists(filename)
 snapshot_exists(){
-  echo "checking if '$1' exists..."
   if [ -f "$1" ]; then
     return 0
   fi
@@ -48,9 +43,9 @@ snapshot_exists(){
 snapshot_create(){
   local buf destdir errno
   local namespace name tag
- 
-  read -r namespace name tag <<< "$(echo "$1" "$2" "$3")"
-  echo "snapshot create invoked with <ns:$namespace> <name:$name> <tag:$tag>"
+
+  IFS=$'\x34' 
+  read -r namespace name tag <<< $(printf "%b" "$1\x34$2\x34$3")
 
   # create <name> [options]
   if [ -z "$name" ]; then
@@ -83,7 +78,7 @@ snapshot_create(){
 
   # check if intermediary temporary file exists
   if snapshot_exists "$destdir/$filename.tar.gz.tmp" ; then
-    echo "removing intermediary temporary file: $destdir/$filename.tmp"
+    echo "Removing intermediary temporary file: $destdir/$filename.tmp"
     rm "$destdir/$filename.tmp"
   fi
   
@@ -120,7 +115,7 @@ snapshot_create(){
     eval "src="${fields[1]}""
     parentdir=$(dirname "${src}")
     t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
-    t2="tar -v --append --file=\"${destdir}/${filename}.tmp\""
+    t2="tar --append --file=\"${destdir}/${filename}.tmp\""
     sbuf="${sbuf}${t2} -C \"$parentdir\" \"$t1\"\n"
   done
 
@@ -143,8 +138,51 @@ snapshot_create(){
     fi
   done
 
-#  if [ $res -ne 0]; then
+  if [ $res -ne 0 ]; then
+    return $res
+  fi
 
+
+  # gzip file
+  gzip -f -9 --no-name "$destdir/$filename.tmp"
+  if [ $? -ne 0 ]; then
+    res=$?
+    errmsg "Error while executing gzip command. Errno: $res"
+    echo "Removing temporary file '$destdir/$filename.tmp' ..."
+    rm "$destdir/$filename.tmp"
+    return $res
+  fi
+
+  # remove previous version file
+  IFS=$'\n'
+  read -d '' -r -a files <<< $(find "$destdir" -type f -name "$filename-*.tar.gz")
+  local file
+  for file in "${files[@]}"; do
+    rm "$file"
+    res=$?
+    if [ $res -ne 0 ]; then
+      errmsg "Remove failed: '$file'. Errno: $res"
+      break
+    fi
+  done
+
+  #if [ -f "$destdir/$filename.tar.gz" ]; then
+  #  rm "$destdir/$filename.tar.gz"
+  #  if [ $? -ne 0 ]; then
+  #    res=$?
+  #    errmsg "Cannot remove original file '$destdir/$filename.tar.gz'. Errno: $res"
+  #    return $res
+  #  fi
+  #fi
+
+  # perform checksum and move operation
+  digest=$(sha256sum "$destdir/$filename.tmp.gz" | awk '{ print $1 }')
+  mv "$destdir/$filename.tmp.gz" "$destdir/$filename-$digest.tar.gz"
+  if [ $? -ne 0 ]; then
+    res=$?
+    errmsg "Error while mv operationg for '$destdir/$filename.tmp.gz'"
+    return $res
+  fi
 
   return $res
 }

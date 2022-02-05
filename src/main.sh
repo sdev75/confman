@@ -86,22 +86,30 @@ init_parseopts(){
     case "$1" in
       create)
         cfg_set "action" "create"
-        if [ -n  "$2" ]; then
+        
+        # format:
+        #   create <name> [<namespace>] [<tag>]
+        #
+        if [ ${#@} -eq 4 ]; then
+          cfg_set "tag" "$4"
+          cfg_set "namespace" "$3"
           cfg_set "name" "$2"
-          #if [ $(expr index "$2" ":") ]; then
-          #  local IFS=':'
-          #  read -r -a pair <<< "$2"
-          #  namespace=${pair[0]}
-          #  group=${pair[1]}
-          #  cfg_set "namespace" "${pair[0]}"
-          #  cfg_set "group" "${pair[1]}"
-          #else
-          #  namespace="default"
-          #  group=$2
-          #fi
+          shift 4
+          break
+        fi
+        if [ ${#@} -eq 3 ]; then
+          cfg_set "namespace" "$3"
+          cfg_set "name" "$2"
+          shift 3
+          break
+        fi
+
+        if [ ${#@} -eq 2 ]; then
+          cfg_set "name" "$2"
           shift 2
           break
         fi
+
         shift
         ;;
       ls)
@@ -196,7 +204,7 @@ dispatch_snapshot(){
     namespace=$(cfg_get "namespace" "default")
     name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "latest")
-
+    
     snapshot_ls "$namespace" "$name" "$tag"
     return $?
   fi
