@@ -67,7 +67,7 @@ init_parseopts(){
         shift 2
         ;;
       --dryrun)
-        cfg_set "opts" $F_DRYRUN
+        cfg_set "opts" "$F_DRYRUN"
         shift
         ;;
       --)

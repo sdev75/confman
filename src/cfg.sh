@@ -8,29 +8,34 @@ cfg_buf_=""
 # if [ $? -ne 0 ]; echo "key does not exist"; fi
 # 
 cfg_get(){
+  IFS=" "
   if [ -z "$1" ]; then
-    echo -ne "$cfg_buf_"
+    printf "%b" "$cfg_buf_"
     return 0
   fi
 
-  local IFS=$'\035'
-  for pair in $cfg_buf_; do
-    local IFS=$'\036'
-    read -r -a a <<< "$pair"
-    if [ "${a[0]}" = "$1" ]; then
-      echo -ne "${a[1]}"
+  local IFS
+
+  IFS=$'\x1e'
+  read -r -a records <<< "$(printf "%b" "$cfg_buf_")"
+  for record in "${records[@]}"; do
+    IFS=$'\x1d'
+    read -r -a fields <<< "$record"
+    if [ "${fields[0]}" = "$1" ]; then
+      printf "%b" "${fields[1]}"
       return 0
     fi
   done
   if [ -n "$2" ]; then
-    echo -ne "$2"
+    printf "%b" "$2"
+    return 2
   fi
   return 1
 }
 
 cfg_set(){
   cfg_unset "$1"
-  cfg_buf_="${cfg_buf_}$(echo -ne "$1\x1e$2\x1d")"
+  cfg_buf_=$(printf "%b" $"${cfg_buf_}$1\x1d$2\x1e")
 }
 
 cfg_unset(){
@@ -38,7 +43,7 @@ cfg_unset(){
     return 0
   fi
 
-  cfg_buf_=$(echo -ne "$cfg_buf_" | sed "s/$1\x1e[^\x1d]*\x1d//")
+  cfg_buf_=$(printf "%b" "$cfg_buf_" | sed "s/$1\x1d[^\x1e]*\x1e//")
   return 0
 }
 
@@ -49,8 +54,9 @@ cfg_hexdump(){
 # turn a flag on using a specific mask
 # int setflags(flags_key, mask)
 cfg_setflags(){
-  local flags=$(( $(cfg_get "$1") ))
-  local mask=$(( $2 ))
+  local flags mask
+  flags=$(( $(cfg_get "$1") ))
+  mask=$(( $2 ))
   cfg_set "$1" $(( flags | mask ))
 }
 
@@ -66,9 +72,10 @@ cfg_setflags(){
 #    echo "flag not set"
 #  fi
 cfg_testflags(){
-  local flags=$(( $(cfg_get "$1") ))
-  local mask=$(( $2 ))
-  if [ $(( flags & mask )) -gt 0 ]; then
+  local flags mask
+  flags=$(( $(cfg_get "$1") ))
+  mask=$(( $2 + 0 ))
+  if [ $(( flags & mask )) != 0 ]; then
     return 0
   fi
   return 1

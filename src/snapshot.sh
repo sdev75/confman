@@ -18,7 +18,7 @@ snapshot_initdestdir(){
   return 0
 }
 
-snapshot_getdestdir(){
+snapshot_destdir(){
   echo "$(cfg_get "cachedir")/$1"
 }
 
@@ -28,7 +28,7 @@ snapshot_filename(){
   local namespace name tag
   IFS=$'\x34'
   read -r namespace name tag <<< "$(printf "%b" "${1}\x34${2}\x34${3}")"
-  echo "${name}_${namespace}_${tag}"
+  echo "${name}--${namespace}--${tag}"
 }
 
 # check if snapshot exists
@@ -41,53 +41,24 @@ snapshot_exists(){
   return 1
 }
 
-snapshot_create(){
-  local buf destdir errno
-  local namespace name tag
+snapshot_buildcmds(){
+  local buf name
 
-  IFS=$'\x34' 
-  read -r namespace name tag <<< $(printf "%b" "$1\x34$2\x34$3")
-
-  # create <name> [options]
-  if [ -z "$name" ]; then
-    errmsg "Name is empty. You must specify a name"
-    return 1
-  fi
-
+  name="$1"
   buf=$(confman_parse "$(cfg_get "confman")")
   if [ $? -ne 0 ]; then
-    errmsg "An error has occurred while parsing the configuration file"
-    return 1
+    return $?
   fi
 
   # hex to string
   buf=$(printf "%s" "$buf" | xxd -p -r)
  
-  # get destination directory for snapshots
-  destdir=$(snapshot_getdestdir "$namespace")
-  snapshot_initdestdir "$destdir"
-  errno=$?
-  if [ $errno -ne 0 ]; then
-    errmsg "Unable to create destdir '$destdir'. Errno: $errno"
-    return 1
-  fi
-
-  # Create snapshot backup for an existing snapshot
-  # The backup file will be restored in case of an error
-  local filename
-  filename=$(snapshot_filename "$namespace" "$name" "$tag")
-
-  # check if intermediary temporary file exists
-  if snapshot_exists "$destdir/$filename.tar.gz.tmp" ; then
-    echo "Removing intermediary temporary file: $destdir/$filename.tmp"
-    rm "$destdir/$filename.tmp"
-  fi
-  
   ##
   # Iterate through parsed configuration data
   local records fields sbuf
   local parentdir src t1 t2
 
+  local IFS
   IFS=$CONFMAN_RS
   read -r -a records <<< "$buf"
   for record in "${records[@]}"; do
@@ -113,89 +84,136 @@ snapshot_create(){
     fi
     #
     # evaluate variables such as $HOME
-    eval "src="${fields[1]}""
+    eval "src=\"${fields[1]}\""
     parentdir=$(dirname "${src}")
     t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
-    t2="tar --append --file=\"${destdir}/${filename}.tmp\""
+    t2="tar --append --file=\"{{filename}}\""
     sbuf="${sbuf}${t2} -C \"$parentdir\" \"$t1\"\n"
   done
-
-  if cfg_testflags "opts" "$F_DRYRUN"; then
-    echo "Dry-run requested. Commands to be executed shown below:"
-    printf "%b" "$sbuf"
-    return 0
+  
+  if [ -z "$name_" ]; then
+    return 100
   fi
 
-  local cmd cmds res
+  printf "%b" "$sbuf"
+  return 0
+}
+
+snapshot_create(){
+  local buf destdir errno
+  local namespace name tag
+
+  local IFS=$'\x34'
+  read -r namespace name tag <<< "$(printf "%b" "$1\x34$2\x34$3")"
+
+  # create <name> [options]
+  if [ -z "$name" ]; then
+    errmsg "Name is empty. You must specify a name"
+    return 1
+  fi
+
+  buf=$(snapshot_buildcmds "$name")
+  errno=$?
+  if [ $errno -ne 0 ]; then
+    errmsg "Error. Could not build commands to run. Errno: $errno"
+    if [ $errno -eq 100 ]; then
+      errmsg "No match found for '$name'."
+      errmsg "Check your configuration file '$(cfg_get "confman")'"
+    fi
+    return $errno
+  fi
+  
+  # Get destination directory and initialize it if not existing
+  destdir=$(snapshot_destdir "$namespace")
+  snapshot_initdestdir "$destdir"
+  errno=$?
+  if [ $errno -ne 0 ]; then
+    errmsg "Error. Unable to create destdir '$destdir'. Errno: $errno"
+    return 1
+  fi
+
+  # Create snapshot backup for an existing snapshot
+  # The backup file will be restored in case of an error
+  local filename
+  filename=$(snapshot_filename "$namespace" "$name" "$tag")
+
+  # Replace {{filename}} token with actual filename value
+  buf=$(printf "%s" "$buf" | sed "s#{{filename}}#$destdir/$filename.tmp#")
+
+  # All data is stored in an intermediary file first
+  # This gives the opportunity to recover from unforeseen errors
+  # The intermediary file is deleted if already present
+  if test -f "$destdir/$filename.tmp"; then
+    echo "Removing intermediary temporary file: $destdir/$filename.tmp"
+    rm "$destdir/$filename.tmp"
+  fi
+
+  # Print Tar commands if --dryrun option is requested
+  # This will NOT prevent deleting temporaries or creating directories
+  if cfg_testflags "opts" "$F_DRYRUN"; then
+    echo "Dry-run requested. Commands to be executed shown below:"
+    printf "%b\n" "$buf"
+    return 0
+  fi
+  
+  local cmd cmds
   IFS=$'\x0a'
-  read -d '' -r -a cmds <<< $"$(printf "%b" "$sbuf")"
+  read -d '' -r -a cmds <<< $"$(printf "%b" "$buf")"
   for cmd in "${cmds[@]}"; do
-    # Eval command and store return value in `$res`
     eval "$cmd"
-    res=$?
-    if [ $res -ne 0 ]; then
-      errmsg "Could not execute command: '$cmd' Errno: $res"
+    errno=$?
+    if [ $errno -ne 0 ]; then
+      errmsg "Could not execute command: '$cmd' Errno: $errno"
       break
     fi
   done
 
-  if [ $res -ne 0 ]; then
-    return $res
+  if [ $errno -ne 0 ]; then
+    return $errno
   fi
 
-  # gzip file
-  gzip -f -9 --no-name "$destdir/$filename.tmp"
-  if [ $? -ne 0 ]; then
-    res=$?
-    errmsg "Error while executing gzip command. Errno: $res"
-    echo "Removing temporary file '$destdir/$filename.tmp' ..."
-    rm "$destdir/$filename.tmp"
-    return $res
+  ## Compress tarball with gzip
+  gzip -f -9 --no-name "$destdir/$filename.tmp" 2>/dev/null
+  errno=$?
+  if [ $errno -ne 0 ]; then
+    errmsg "Error while executing gzip command. Errno: $errno"
+    return $errno
   fi
 
-  # perform checksum and move operation
+  # Calculate file checksum
   digest=$(sha256sum "$destdir/$filename.tmp.gz" | awk '{ print $1 }')
 
-  # verify tarball
-  echo "Verifying tarball '$destdir/$filename.tmp.gz'"
+  # Verify tarball integrity
+  echo "Verifying tarball integrity '$destdir/$filename.tmp.gz'"
   gunzip -c "$destdir/$filename.tmp.gz" | tar -t > /dev/null
-  if [ $? -ne 0 ]; then
-    res=$?
-    errmsg "Unable to verify tarball. Errno: $res"
-    return $res
+  errno=$?
+  if [ $errno -ne 0 ]; then
+    errmsg "Unable to verify tarball. Errno: $errno"
+    return $errno
   fi
 
   # remove previous version file
+  local files file
   IFS=$'\n'
-  read -d '' -r -a files <<< $(find "$destdir" -type f -name "$filename-*.tar.gz")
-  local file
+  read -d '' -r -a files <<< \
+    "$(find "$destdir" -type f -name "$filename*.tar.gz")"
   for file in "${files[@]}"; do
     echo "Removing file: '$file'"
     rm "$file"
-    res=$?
-    if [ $res -ne 0 ]; then
-      errmsg "Operation failed: '$file'. Errno: $res"
+    errno=$?
+    if [ $errno -ne 0 ]; then
+      errmsg "Operation failed: '$file'. Errno: $errno"
       break
     fi
   done
   
   # make the final move
-  mv "$destdir/$filename.tmp.gz" "$destdir/$filename-$digest.tar.gz"
+  mv "$destdir/$filename.tmp.gz" "$destdir/$filename--$digest.tar.gz"
+  errno=$?
   if [ $? -ne 0 ]; then
-    res=$?
-    errmsg "Error while mv operationg for '$destdir/$filename-$digest.tmp.gz'"
-    return $res
+    errmsg "Error while moving temporary: '$destdir/$filename--$digest.tmp.gz'. Errno: $errno"
+    return $errno
   fi
-
-
-  #if [ -f "$destdir/$filename.tar.gz" ]; then
-  #  rm "$destdir/$filename.tar.gz"
-  #  if [ $? -ne 0 ]; then
-  #    res=$?
-  #    errmsg "Cannot remove original file '$destdir/$filename.tar.gz'. Errno: $res"
-  #    return $res
-  #  fi
-  #fi
 
   echo "OK. Snapshot created: '$destdir/$filename-$digest.tar.gz'."
   return $res
@@ -206,7 +224,7 @@ snapshot_fmt_ls(){
   buf=('
 #include fmt_ls.awk
   ')
-  echo "$buf"
+  echo "${buf[0]}"
 }
 
 snapshot_ls_(){

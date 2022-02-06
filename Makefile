@@ -1,7 +1,7 @@
 
 PROG=confman
 PREFIX=/usr/local
-SHELLCHECK_OPTS=--exclude SC2181
+SHELLCHECK_OPTS=--exclude SC2181,SC2034,SC2010
 #CPPFLAGS=-I src -x assembler-with-cpp -P -w
 
 all: ${PROG}

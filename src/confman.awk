@@ -2,8 +2,8 @@ BEGIN {
   ORS=rs
 }
 {
-  if ($0 ~ /[[:alnum:]]+ *{/) { 
-    match($0,/^([[:alnum:]]+).*/,matches)
+  if ($0 ~ /[[:alnum:]_\-]+ *{/) { 
+    match($0,/^([[:alnum:]_\-]+) */,matches)
     name = matches[1]
     actions[name][0] = name
     idxcnt[name] = 1
