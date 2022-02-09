@@ -12,10 +12,21 @@ declare -r NOCOLOR='\e[0m'
 declare -a HELPTEXT=("
 Usage ${0} [OPTIONS]
 
-Options:
+Global Options:
   -h, --help      Prints this message
   -f, --file      Configuration file to read
-  --parse         Parse and print configuration then exit
+      --parse     Parse configuration, print it then exit
+
+Snapshot Commands:
+  mk, create      Usage: ${0} mk [name [tag [namespace]]]
+  ls, list        Usage: ${0} ls [name [tag [namespace]]]
+  rm, remove      Usage: ${0} rm [name [tag [namespace]]]
+  cp, copy        Usage: ${0} cp [name [tag [namespace]]] destdir
+  rr, restore     Usage: ${0} rr filename [name [tag [namespace]]]
+
+Snapshot Options:
+  -t, --tag       Set snapshot tag value
+  -n, --ns        Set snapshot namespace value
 ")
 
 errmsg(){

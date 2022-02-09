@@ -7,7 +7,7 @@ BEGIN {
   FS = " "
   # %W created since epoch
   # %Y modified since epoch
-  cmd = "stat -c \"%n\x1d%U\x1d%G\x1d%A\x1d%W\x1d%Y\" " current_dir "/" $1
+  cmd = "stat -c \"%n\x1d%U\x1d%G\x1d%A\x1d%W\x1d%Y\" " $1
   cmd | getline buf
   close(cmd)
 
@@ -34,7 +34,7 @@ BEGIN {
   n = split (basename, a, "--", seps)
   
   if (n < 4) {
-    next;
+    next
   }
 
   name = a[1]
@@ -43,5 +43,26 @@ BEGIN {
   checksum = a[4]
   id = substr(checksum,0,12)
   
+  # filter by tag
+  if (length(filter_tag)){
+    if (filter_tag != tag){
+      next
+    }
+  }
+
+  # filter by name
+  if (length(filter_name)){
+    if (filter_name != name){
+      next
+    }
+  }
+
+  if (length(filter_id)){
+    regex = "^" filter_id
+    if (id !~ regex){
+      next
+    }
+  }
+
   print perms " " user "/" group,size "KB",created_at,namespace,name,tag,id
 }

@@ -84,7 +84,7 @@ init_parseopts(){
   # parse arguments
   while true; do
     case "$1" in
-      create)
+      mk |  create)
         cfg_set "action" "create"
         
         # format:
@@ -112,14 +112,32 @@ init_parseopts(){
 
         shift
         ;;
-      ls)
+      ls | list)
         cfg_set "action" "ls"
-        if [ -n "$2" ]; then
+        
+        # format:
+        #   ls [name [tag [namespace]]]
+        #
+        if [ ${#@} -eq 4 ]; then
+          cfg_set "tag" "$3"
+          cfg_set "namespace" "$4"
+          cfg_set "name" "$2"
+          shift 4
+          break
+        fi
+        if [ ${#@} -eq 3 ]; then
+          cfg_set "tag" "$3"
+          cfg_set "name" "$2"
+          shift 3
+          break
+        fi
+
+        if [ ${#@} -eq 2 ]; then
           cfg_set "name" "$2"
           shift 2
           break
         fi
-        
+
         shift
         ;;
       *)
@@ -186,7 +204,6 @@ dispatch(){
 }
 
 dispatch_snapshot(){
-  
   # create snapshot
   if [ "$1" = "create" ]; then
     local namespace name tag
@@ -201,9 +218,9 @@ dispatch_snapshot(){
   # list snapshots
   if [ "$1" = "ls" ]; then
     local namespace name tag
-    namespace=$(cfg_get "namespace" "default")
+    namespace=$(cfg_get "namespace" "")
     name=$(cfg_get "name" "")
-    tag=$(cfg_get "tag" "latest")
+    tag=$(cfg_get "tag" "")
     
     snapshot_ls "$namespace" "$name" "$tag"
     return $?

@@ -227,22 +227,151 @@ snapshot_fmt_ls(){
   echo "${buf[0]}"
 }
 
+snapshot_find_(){
+  local cachedir buf
+  local namespace
+  
+  cachedir="$1"
+  namespace="$2"
+  
+  IFS=$'\n'
+  for dir in $(find "$cachedir/" \
+      -mindepth 1 -maxdepth 1 -type d -printf '%f\n'); do
+    # filter by namespace if requested
+    if [ -n "$namespace" ]; then
+      if [ "$dir" != "$namespace" ]; then
+        continue
+      fi
+    fi
+
+    buf="${buf}\n$(find "$cachedir/$dir" -type f -name "*.tar.gz" -printf '%p\n')"
+  done
+  buf=${buf:2}
+  printf "%b" "$buf"
+}
+
+
+snapshot_find__(){
+  local cachedir namespace ns
+
+  cachedir="$1"
+  namespace="$2"
+  
+  for ns in $(find "$cachedir/" \
+    -mindepth 1 -maxdepth 1 -type d)
+  do
+    ns=$(basename "$ns")
+    # filter by namespace if requested
+    if [ -n "$namespace" ]; then
+      if [ "$ns" != "$namespace" ]; then
+        continue
+      fi
+    fi
+
+    echo "$(find "$cachedir/$ns" \
+      -type f -name "*.tar.gz" \
+      -printf '%p\n')"
+  done
+}
+
+snapshot_ls__(){
+  local cachedir namespace
+  local filenamee basename
+
+  cachedir="$1"
+  namespace="$2"
+
+  local fs rs; fs=$CONFMAN_FS; rs=$'\x0a'
+  for filename in $(snapshot_find__ "$cachedir" "$namespace")
+  do
+    basename=$(basename "$filename" | sed s/.tar.gz//)
+    IFS=$fs; read -r -a basename <<< \
+      $(echo "$basename" | sed s/--/\\x1d/g)
+    printf "%s$fs%s$fs%s$fs%s${rs}" \
+      "${basename[0]}" \
+      "${basename[1]}" \
+      "${basename[2]}" \
+      "${basename[3]}"
+  done
+}
+
+
+snapshot_filter_tag(){
+  snapshot_filter_index "2" "$1"
+}
+
+snapshot_filter_name(){
+  snapshot_filter_index "0" "$1"
+}
+
+# Output format is <name> <namespace> <tag> <hash>
+#                   idx0      1         2      3
+# value at idex 1 is namespace etc
+# its a way to map values and filter them
+snapshot_filter_index(){
+  local buf arr
+  IFS=$CONFMAN_FS
+  while read -r buf; do
+    read -r -a arr <<< "$buf"
+    if [ -n "$2" ] && [ "$2" != "${arr[$1]}" ]; then
+      continue
+    fi
+    echo "$buf"
+  done <<< "$(</dev/stdin)"
+}
+
 snapshot_ls_(){
-  local buf
-  buf=$(ls -apt "$1" | grep -v '/$' | grep ".tar\|.tar.gz$" \
-    | awk \
-     -v current_dir="$1" \
-     -v ofs="\x1d" \
-     "$(snapshot_fmt_ls)" \
-    | column -s $'\x1d' -t)
-  echo "$buf"
+  local cachedir buf
+  local namespace name tag
+
+  cachedir="$1"
+  namespace="$2"
+  name="$3"
+  tag="$4"
+
+  snapshot_ls__ "$cachedir" "$namespace" \
+    | snapshot_filter_tag "$tag" \
+    | snapshot_filter_name "$name"
+
+  exit
+
+  printf "%b" $(snapshot_ls__ "$cachedir" "default") \
+    | snapshot_filter_tag
+  exit
+
+  local fs rs; fs=$'\x1d'; rs=$'\n'
+  printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s" \
+    "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE" \
+    | column -s $fs -t
+
+  confman_ls_ "$cachedir" "default"
+  exit 
+  buf=$(snapshot_find_ "$cachedir" "$namespace" "$name" "$tag")
+
+  #basename=$(basename "$file" | sed s/.tar.gz//)
+  #IFS="--"; read -r -a filename <<< "$basename"
+  printf "%b" "$buf"
+  exit
+  printf "%b" "$buf" | awk \
+          -v current_dir="$cachedir" \
+          -v ofs="\x1d" \
+          -v filter_tag="$tag" \
+          -v filter_name="$name" \
+          "$(snapshot_fmt_ls)" \
+        | column -s $'\x1d' -t
 }
 
 snapshot_ls(){
-  local namespace cachedir
+  local cachedir namespace name tag
 
   namespace="$1"
+  name="$2"
+  tag="$3"
   cachedir=$(cfg_get "cachedir")
 
-  snapshot_ls_ "$cachedir/$namespace"
+  snapshot_ls_ "$cachedir" "$namespace" "$name" "$tag"
+}
+
+snapshot_rm(){
+  local namespace
 }
