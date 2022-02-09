@@ -113,7 +113,7 @@ init_parseopts(){
         shift
         ;;
       ls | list)
-        cfg_set "action" "ls"
+        cfg_set "action" "list"
         
         # format:
         #   ls [name [tag [namespace]]]
@@ -123,22 +123,19 @@ init_parseopts(){
           cfg_set "namespace" "$4"
           cfg_set "name" "$2"
           shift 4
-          break
-        fi
-        if [ ${#@} -eq 3 ]; then
+
+        elif [ ${#@} -eq 3 ]; then
           cfg_set "tag" "$3"
           cfg_set "name" "$2"
           shift 3
-          break
-        fi
-
-        if [ ${#@} -eq 2 ]; then
+        
+        elif [ ${#@} -eq 2 ]; then
           cfg_set "name" "$2"
           shift 2
-          break
+          
+        else
+          shift
         fi
-
-        shift
         ;;
       *)
         shift
@@ -173,7 +170,7 @@ init(){
 }
 
 dispatch(){
-  local buf
+  local buf action
   # Print processed conf without proceeding further
   if cfg_testflags "opts" "$F_PARSE_ONLY"; then
     echo "Using $(cfg_get confman)"
@@ -188,13 +185,13 @@ dispatch(){
     confman_print "$buf" | column -s $'\x1d' -t
     exit
   fi
-
+  
   action=$(cfg_get "action" "none")
   case "$action" in
     create)
       dispatch_snapshot "$action"
       ;;
-    ls)
+    "list")
       dispatch_snapshot "$action"
       ;;
     *)
@@ -216,7 +213,7 @@ dispatch_snapshot(){
   fi
   
   # list snapshots
-  if [ "$1" = "ls" ]; then
+  if [ "$1" = "list" ]; then
     local namespace name tag
     namespace=$(cfg_get "namespace" "")
     name=$(cfg_get "name" "")

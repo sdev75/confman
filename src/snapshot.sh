@@ -1,5 +1,4 @@
 
-##
 # Create tarball and gzip it using attributes such as TAG
 # int snapshot_create (tag)
 ##
@@ -295,6 +294,27 @@ snapshot_ls__(){
   done
 }
 
+# Output format is <name> <namespace> <tag> <hash>
+#                   idx0      1         2      3
+# value at idex 1 is namespace etc
+# its a way to map values and filter them
+snapshot_filter_index(){
+  # Discard empty input
+  if [ -z "$2" ]; then
+    echo "$(</dev/stdin)"
+    return 1
+  fi
+
+  local buf arr
+  IFS=$CONFMAN_FS
+  while read -r buf; do
+    read -r -a arr <<< "$buf"
+    if [ "$2" != "${arr[$1]}" ]; then
+      continue
+    fi
+    echo "$buf"
+  done <<< "$(</dev/stdin)"
+}
 
 snapshot_filter_tag(){
   snapshot_filter_index "2" "$1"
@@ -304,16 +324,20 @@ snapshot_filter_name(){
   snapshot_filter_index "0" "$1"
 }
 
-# Output format is <name> <namespace> <tag> <hash>
-#                   idx0      1         2      3
-# value at idex 1 is namespace etc
-# its a way to map values and filter them
-snapshot_filter_index(){
+# filter by hash
+# minimum 2 chars required
+snapshot_filter_hash(){
+  # Discard non-hex input
+  if [ $(expr "$1" : "^[[:xdigit:]]\{2,\}$") -eq 0 ]; then
+    echo "$(</dev/stdin)"
+    return 1
+  fi
+
   local buf arr
-  IFS=$CONFMAN_FS
+  IFS="$CONFMAN_FS"
   while read -r buf; do
     read -r -a arr <<< "$buf"
-    if [ -n "$2" ] && [ "$2" != "${arr[$1]}" ]; then
+    if [ -n "$1" ] && [ $(expr "${arr[3]}" : "$1") -eq 0 ]; then
       continue
     fi
     echo "$buf"
@@ -328,11 +352,20 @@ snapshot_ls_(){
   namespace="$2"
   name="$3"
   tag="$4"
+  echo "name is '$name'"
 
-  snapshot_ls__ "$cachedir" "$namespace" \
-    | snapshot_filter_tag "$tag" \
-    | snapshot_filter_name "$name"
+  # Find by checksum
+  buf=$(snapshot_ls__ "$cachedir" \
+    | snapshot_filter_hash "$name")
 
+  if [ $? -ne 0 ]; then
+    echo "Not found by hash, trying more:"
+    buf=$(snapshot_ls__ "$cachedir" "$namespace" \
+      | snapshot_filter_tag "$tag" \
+      | snapshot_filter_name "$name")
+  fi
+
+  echo "$buf"
   exit
 
   printf "%b" $(snapshot_ls__ "$cachedir" "default") \
