@@ -214,64 +214,9 @@ snapshot_create(){
     return $errno
   fi
 
-  echo "OK. Snapshot created: '$destdir/$filename-$digest.tar.gz'."
-  return $res
+  echo "OK. Snapshot: '$destdir/$filename-$digest.tar.gz'."
+  return 0
 }
-
-snapshot_fmt_ls(){
-  local buf
-  buf=('
-#include fmt_ls.awk
-  ')
-  echo "${buf[0]}"
-}
-
-snapshot_find_(){
-  local cachedir buf
-  local namespace
-  
-  cachedir="$1"
-  namespace="$2"
-  
-  IFS=$'\n'
-  for dir in $(find "$cachedir/" \
-      -mindepth 1 -maxdepth 1 -type d -printf '%f\n'); do
-    # filter by namespace if requested
-    if [ -n "$namespace" ]; then
-      if [ "$dir" != "$namespace" ]; then
-        continue
-      fi
-    fi
-
-    buf="${buf}\n$(find "$cachedir/$dir" -type f -name "*.tar.gz" -printf '%p\n')"
-  done
-  buf=${buf:2}
-  printf "%b" "$buf"
-}
-
-
-#snapshot_find__(){
-#  local cachedir namespace ns
-#
-#  cachedir="$1"
-#  namespace="$2"
-#  
-#  for ns in $(find "$cachedir/" \
-#    -mindepth 1 -maxdepth 1 -type d)
-#  do
-#    ns=$(basename "$ns")
-#    # filter by namespace if requested
-#    if [ -n "$namespace" ]; then
-#      if [ "$ns" != "$namespace" ]; then
-#        continue
-#      fi
-#    fi
-#
-#    echo "$(find "$cachedir/$ns" \
-#      -type f -name "*.tar.gz" \
-#      -printf '%p\n')"
-#  done
-#}
 
 snapshot_find_dirs_(){
   printf "%s\n" \
@@ -306,12 +251,11 @@ snapshot_filter_namespace(){
 
 snapshot_filter_file_(){
   local buf basename
-  local fs rs; fs=$CONFMAN_FS; rs=$'\x0a'
 
+  local fs rs; fs=$CONFMAN_FS; rs=$'\x0a'
   while read -r buf; do
     basename="$(basename "$buf" | sed s/.tar.gz//)"
-    IFS="$fs"; read -r -a basename <<< \
-      "$(echo "$basename" | sed s/--/\\x1d/g)"
+    IFS="$fs"; read -r -a basename <<< "${basename//--/$fs}"
     
     printf "%s$fs%s$fs%s$fs%s${rs}" \
         "${basename[0]}" \
@@ -322,13 +266,10 @@ snapshot_filter_file_(){
   done <<< "$(</dev/stdin)"
 }
 
+# char* snapshot_find_ (cachedir, namespace)
 snapshot_find_(){
-  local cachedir namespace
-  cachedir="$1"
-  namespace="$2"
- 
-  snapshot_find_dirs_ "$cachedir" \
-    | snapshot_filter_namespace "$namespace" \
+  snapshot_find_dirs_ "$1" \
+    | snapshot_filter_namespace "$2" \
     | snapshot_find_files_ \
     | snapshot_filter_file_ 
 }
@@ -376,47 +317,72 @@ snapshot_filter_hash(){
   IFS="$CONFMAN_FS"
   while read -r buf; do
     read -r -a arr <<< "$buf"
-    if [ -n "$1" ] && [ $(expr "${arr[3]}" : "$1") -eq 0 ]; then
+    if [ -n "$1" ] && [ "$(expr "${arr[3]}" : "$1")" -eq 0 ]; then
       continue
     fi
     echo "$buf"
   done <<< "$(</dev/stdin)"
 }
 
-snapshot_ls_(){
-  local cachedir namespace name tag
+snapshot_file_details_(){
+  local dir buf a t
+  local filename
+  local created size id
 
-  cachedir="$1"
-  namespace="$2"
+  dir="$1"
+  local fs rs; fs="$CONFMAN_FS"; rs=$'\x0a'
+  while read -r buf; do
+
+    IFS="$fs"; read -r -a a <<< "$buf"
+
+    filename="$dir/${a[1]}/${a[0]}--${a[1]}--${a[2]}--${a[3]}.tar.gz"
+    
+    t="$(stat -c "%W" "$filename")"
+    created="$(date -d "@$t" +"%Y-%m-%d %H:%M")"
+    size="$(du -k "$filename" | cut -f1)"
+    printf "%s$fs%s$fs%s$fs%s$fs%s$fs%s${rs}" \
+        "${a[1]}" \
+        "${a[0]}" \
+        "${a[2]}" \
+        "${a[3]:0:12}" \
+        "$created" \
+        "$size KB"
+  done <<< "$(</dev/stdin)"
+}
+
+snapshot_ls_(){
+  local dir ns name tag
+
+  dir="$1"
+  ns="$2"
   name="$3"
   tag="$4"
-  
+ 
   # Find by checksum
-  snapshot_find_ "$cachedir" \
+  snapshot_find_ "$dir" \
     | snapshot_filter_hash "$name"
   
   if [ $? -ne 0 ]; then
-    snapshot_find_ "$cachedir" "$namespace" \
+    snapshot_find_ "$dir" "$ns" \
       | snapshot_filter_tag "$tag" \
       | snapshot_filter_name "$name"
   fi
 }
 
 snapshot_ls(){
-  local cachedir namespace name tag
+  local dir ns name tag
+  
+  dir="$1"
+  ns="$2"
+  name="$3"
+  tag="$4" 
 
-  namespace="$1"
-  name="$2"
-  tag="$3"
-  cachedir=$(cfg_get "cachedir")
+  local fs rs; fs="$CONFMAN_FS"; rs=$'\n'
+  printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s${rs}" \
+    "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE"
 
-  local fs rs; fs=$'\x1d'; rs=$'\n'
-  printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s" \
-    "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE" \
-    | column -s $fs -t
-
-  snapshot_ls_ "$cachedir" "$namespace" "$name" "$tag" \
-    | column -s "$fs" -t
+  snapshot_ls_ "$dir" "$ns" "$name" "$tag" \
+    | snapshot_file_details_ "$dir"
 }
 
 snapshot_rm(){

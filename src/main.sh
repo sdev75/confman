@@ -215,11 +215,13 @@ dispatch_snapshot(){
   # list snapshots
   if [ "$1" = "list" ]; then
     local namespace name tag
+    cachedir=$(cfg_get "cachedir")
     namespace=$(cfg_get "namespace" "")
     name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "")
     
-    snapshot_ls "$namespace" "$name" "$tag"
+    snapshot_ls "$cachedir" "$namespace" "$name" "$tag" \
+      | column -s "$CONFMAN_FS" -t
     return $?
   fi
 
