@@ -16,7 +16,7 @@ vim {
 
 The above directives will instruct `confman` to create a snapshot of the files within the brakets and tar.gz them for you
 
-## Synopsys
+## Synopsis
 ```sh
 confman [ACTION] [OPTION...]
 ```
