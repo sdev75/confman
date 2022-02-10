@@ -219,6 +219,10 @@ snapshot_create(){
 }
 
 snapshot_find_dirs_(){
+  if [ ! -d "$1/" ]; then
+    echo ''
+    return 1
+  fi
   printf "%s\n" \
     "$(find "$1/" -mindepth 1 -maxdepth 1 -type d)"
 }
@@ -226,6 +230,9 @@ snapshot_find_dirs_(){
 snapshot_find_files_(){
   local buf
   while read -r buf; do
+    if [ -z "$buf" ]; then
+      continue
+    fi
     printf "%s\n" \
       "$(find "$buf" -type f -name '*.tar.gz' -printf '%p\n')"
   done <<< "$(</dev/stdin)"
@@ -332,6 +339,10 @@ snapshot_file_details_(){
   dir="$1"
   local fs rs; fs="$CONFMAN_FS"; rs=$'\x0a'
   while read -r buf; do
+
+    if [ -z "$buf" ]; then
+      continue
+    fi
 
     IFS="$fs"; read -r -a a <<< "$buf"
 
