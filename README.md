@@ -24,6 +24,15 @@ confman [ACTION] [OPTION...]
 ## Description
 Confman searched for a `.confman` file within the current working directory. If the `.confman` file is not found, it will traverse each parent directory until it either find one or it reaches the root directory. In that case the application will exit with an error code.
 
+Confman uses a repository directory, which is a directory that keeps snappshots organized. This directory is structured as follows:
+
+```sh
+.cache/confman/<NAMESPACE>/<FILENAME>
+```
+
+The default repository directory is `$HOME/.cache/confman`. This can be overriden by using the options `--repo`.
+
+
 ## Anatomy of configuration file
 A configuration file acts as set of rules to map several files into groups or collections. These can be aggregated further using namespaces. We will see how to do this soon.
 
@@ -44,10 +53,10 @@ group2 {
 ```
 
 ## Manual configuration file
-A configuration file can be explicitly set using the option `--file` or the short version `-f`
+A configuration file can be explicitly set using the option `--config` or the short version `-c`
 
 ```sh
-confman -f /etc/.confman
+confman -c /etc/.confman
 ```
 
 ## Basic usage
@@ -112,6 +121,39 @@ confman ls <name> <tag> <namespace>
 
 # Filter by namespace and tag
 confman ls -t <tag> -n <namespace>
+```
+
+#### Copying snapshots
+
+A snapshot can be copied to a destination directory. This is useful when doing backups for specific snapshots.
+When copying a snapshot, the name of the snapshot along with a destination directory are mandatory arguments.
+The `name` field will attempt to match a valid name, including but not limited to a checksum value. It's important to notice that if multiple snapshots are matched, all the matched snapshots will be copied to the destination folder. Therefore, attention should be paid when entering a name value to avoid
+ambiguity whenever possible.
+
+```sh
+confman cp NAME [TAG [NAMESPACE]] DESTDIR
+```
+
+An optional tag and namespace can be passed in using the `-t` and `-n` flags accordingly. Empty values will match everything. 
+
+More examples:
+
+```sh
+# Copy a snapshot having the checksum with the digits "289" and tag "latest" into /home/backups/<filename>.tar.gz
+confman cp 289 latest /home/backups
+
+# Copy all snapshots having a specific namespace and a tag
+confman cp vim tag1 namespace1 /home/backups
+
+# Copy all snapshots having a specific tag with any namespaces
+confman cp vim tag2 -n "" /home/backups
+
+# Copy all snapshots by name regardless of tag and namespace (empty values match everything)
+confman cp vim -t "" -n "" /home/backups
+
+# Copy all snapshots with any tag and specific namespace
+confman cp vim -t "" -n "mynamespace" /home/backups
+
 ```
 
 ### More to come

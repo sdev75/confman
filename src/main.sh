@@ -3,28 +3,30 @@
 #include misc.sh
 #include cfg.sh
 #include confman.sh
-#include snapshot.sh
+#include snapshot/snapshot.sh
+#include snapshot/snapshot_create.sh
+#include snapshot/snapshot_list.sh
+#include snapshot/snapshot_copy.sh
 
-# Set default cachedir 
+# Set default repodir 
 # default value to ~/.cache/confman
-# Its possible to pass the value by ENV using CACHEDIR=. confman
-init_cachedir(){
-  local cachedir
+# Its possible to pass the value by ENV using REPODIR=. confman
+init_repodir(){
+  local repodir
 
-  cachedir="$1"
+  repodir=$(realpath "$1")
   # CacheDir must exists to operate correctly
-  if [ ! -d "$cachedir" ]; then
-    read -rep "$cachedir not found. Shall I create it? (y/n)" -n 1
+  if [ ! -d "$repodir" ]; then
+    read -rep "Repository directory '$repodir' not found. Shall I create it? (y/n)" -n 1
     if echo "$REPLY" | grep -Eq '[yY]'; then
-      mkdir -p "$cachedir"
+      mkdir -p "$repodir"
     else
-     errmsg "$cachedir is required to use this program" 
+     errmsg "'$repodir' is required to use this program" 
      exit 1
     fi
   fi
 
-  cachedir=$(realpath "$cachedir")
-  cfg_set "cachedir" "$cachedir"
+  cfg_set "repodir" "$repodir"
 }
 
 init_flags(){
@@ -32,12 +34,13 @@ init_flags(){
   readonly F_CONFMAN_FILE=$((1 << 0))
   readonly F_PARSE_ONLY=$((2 << 0))
   readonly F_DRYRUN=$((4 << 0))
+  readonly F_FORCE=$((8 << 0))
 }
 
 init_parseopts(){
   local shortargs longargs opts
-  shortargs="hf:t:"
-  longargs="help,file:,parse,cachedir:,tag:,dryrun"
+  shortargs="hc:t:n:f"
+  longargs="help,config:,parse,repodir:,tag:,namespace:,dryrun,force"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
   if [ $? -ne 0 ]; then
     exit $?
@@ -53,11 +56,11 @@ init_parseopts(){
         cfg_setflags "opts" $F_PARSE_ONLY
         shift
         ;;
-      --cachedir)
-        cfg_set "cachedir" "$2"
+      --repodir)
+        cfg_set "repodir" "$2"
         shift 2
         ;;
-      -f|--file)
+      -c|--config)
         cfg_setflags opts $F_CONFMAN_FILE
         cfg_set "confman" "$2"
         shift 2
@@ -66,8 +69,16 @@ init_parseopts(){
         cfg_set "tag" "$2"
         shift 2
         ;;
+      -n|--namespace)
+        cfg_set "namespace" "$2"
+        shift 2
+        ;;
       --dryrun)
         cfg_set "opts" "$F_DRYRUN"
+        shift
+        ;;
+      -f|--force)
+        cfg_set "opts" "$F_FORCE"
         shift
         ;;
       --)
@@ -137,6 +148,30 @@ init_parseopts(){
           shift
         fi
         ;;
+      cp | copy)
+        cfg_set "action" "copy"
+        if [ ${#@} -eq 5 ]; then
+          cfg_set "destdir" "$5"
+          cfg_set "namespace" "$4"
+          cfg_set "tag" "$3"
+          cfg_set "name" "$2"
+          shift 4
+
+        elif [ ${#@} -eq 4 ]; then
+          cfg_set "destdir" "$4"
+          cfg_set "tag" "$3"
+          cfg_set "name" "$2"
+          shift 3
+        
+        elif [ ${#@} -eq 3 ]; then
+          cfg_set "destdir" "$3"
+          cfg_set "name" "$2"
+          shift 2
+          
+        else
+          shift
+        fi
+        ;;
       *)
         shift
         ;;
@@ -148,7 +183,7 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts "$@"
-  init_cachedir "$(cfg_get "cachedir" "$HOME/.cache/confman")"
+  init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
   
   # includedir & lookup
   # Determines the include path of '.confman' file
@@ -191,7 +226,10 @@ dispatch(){
     create)
       dispatch_snapshot "$action"
       ;;
-    "list")
+    copy)
+      dispatch_snapshot "$action"
+      ;;
+    list)
       dispatch_snapshot "$action"
       ;;
     *)
@@ -211,16 +249,29 @@ dispatch_snapshot(){
     snapshot_create "$namespace" "$name" "$tag"
     return $?
   fi
+
+  if [ "$1" = "copy" ]; then
+    local repodir namespace name tag
+
+    repodir=$(cfg_get "repodir")
+    namespace=$(cfg_get "namespace" "default")
+    name=$(cfg_get "name" "")
+    tag=$(cfg_get "tag" "latest")
+    destdir=$(cfg_get "destdir" "")
+
+    snapshot_copy "$repodir" "$namespace" "$name" "$tag" "$destdir"
+    return $?
+  fi
   
   # list snapshots
   if [ "$1" = "list" ]; then
-    local namespace name tag
-    cachedir=$(cfg_get "cachedir")
+    local repodir namespace name tag
+    repodir=$(cfg_get "repodir")
     namespace=$(cfg_get "namespace" "")
     name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "")
     
-    snapshot_ls "$cachedir" "$namespace" "$name" "$tag" \
+    snapshot_list "$repodir" "$namespace" "$name" "$tag" \
       | column -s "$CONFMAN_FS" -t
     return $?
   fi
