@@ -7,6 +7,7 @@
 #include snapshot/snapshot_create.sh
 #include snapshot/snapshot_list.sh
 #include snapshot/snapshot_copy.sh
+#include snapshot/snapshot_remove.sh
 
 # Set default repodir 
 # default value to ~/.cache/confman
@@ -95,59 +96,34 @@ init_parseopts(){
   # parse arguments
   while true; do
     case "$1" in
-      mk |  create)
-        cfg_set "action" "create"
-        
-        # format:
-        #   create <name> [<namespace>] [<tag>]
-        #
-        if [ ${#@} -eq 4 ]; then
-          cfg_set "tag" "$4"
-          cfg_set "namespace" "$3"
-          cfg_set "name" "$2"
-          shift 4
-          break
-        fi
-        if [ ${#@} -eq 3 ]; then
-          cfg_set "namespace" "$3"
-          cfg_set "name" "$2"
-          shift 3
-          break
-        fi
-
-        if [ ${#@} -eq 2 ]; then
-          cfg_set "name" "$2"
-          shift 2
-          break
-        fi
-
-        shift
-        ;;
+     # create name [tag [namespace]]
+     create)
+       cfg_set "action" "create"
+       cfg_set "namespace" "$4"
+       cfg_set "tag" "$3"
+       cfg_set "name" "$2"
+       shift ${#@}
+      ;;
+      # list name [tag [namespace]]
+      # list checksum
       ls | list)
         cfg_set "action" "list"
-        
-        # format:
-        #   ls [name [tag [namespace]]]
-        #
         if [ ${#@} -eq 4 ]; then
           cfg_set "tag" "$3"
           cfg_set "namespace" "$4"
           cfg_set "name" "$2"
-          shift 4
-
         elif [ ${#@} -eq 3 ]; then
           cfg_set "tag" "$3"
           cfg_set "name" "$2"
-          shift 3
-        
         elif [ ${#@} -eq 2 ]; then
           cfg_set "name" "$2"
-          shift 2
-          
-        else
-          shift
         fi
+
+        shift ${#@}
         ;;
+
+      # copy name [tag [namespace]]
+      # copy checksum
       cp | copy)
         cfg_set "action" "copy"
         if [ ${#@} -eq 5 ]; then
@@ -155,22 +131,26 @@ init_parseopts(){
           cfg_set "namespace" "$4"
           cfg_set "tag" "$3"
           cfg_set "name" "$2"
-          shift 4
-
         elif [ ${#@} -eq 4 ]; then
           cfg_set "destdir" "$4"
           cfg_set "tag" "$3"
           cfg_set "name" "$2"
           shift 3
-        
         elif [ ${#@} -eq 3 ]; then
           cfg_set "destdir" "$3"
           cfg_set "name" "$2"
           shift 2
-          
-        else
-          shift
         fi
+        shift ${#@}
+        ;;
+      # remove name [tag [namespace]]
+      # remove checksum
+      rm | remove)
+        cfg_set "action" "remove"
+        cfg_set "namespace" "$4"
+        cfg_set "tag" "$3"
+        cfg_set "name" "$2"
+        shift ${#@}
         ;;
       *)
         shift
@@ -184,7 +164,6 @@ init(){
   init_flags
   init_parseopts "$@"
   init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
-  
   # includedir & lookup
   # Determines the include path of '.confman' file
   # It can be requested via opt
@@ -232,6 +211,9 @@ dispatch(){
     list)
       dispatch_snapshot "$action"
       ;;
+    remove)
+      dispatch_snapshot "$action"
+      ;;
     *)
       errmsg "No route available for action '$action'"
       ;;
@@ -273,6 +255,17 @@ dispatch_snapshot(){
     
     snapshot_list "$repodir" "$namespace" "$name" "$tag" \
       | column -s "$CONFMAN_FS" -t
+    return $?
+  fi
+
+  if [ "$1" = "remove" ]; then
+    local repodir ns name tag
+    repodir="$(cfg_get "repodir")"
+    namespace=$(cfg_get "namespace" "default")
+    name=$(cfg_get "name" "")
+    tag=$(cfg_get "tag" "latest")
+    
+    snapshot_remove "$repodir" "$namespace" "$name" "$tag"
     return $?
   fi
 

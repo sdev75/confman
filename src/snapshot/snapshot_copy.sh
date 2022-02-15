@@ -1,8 +1,8 @@
 snapshot_copy(){
-  local fromdir destdir
+  local repodir destdir
   local ns name tag
 
-  fromdir="$1"
+  repodir="$1"
   ns="$2"
   name="$3"
   tag="$4"
@@ -10,7 +10,7 @@ snapshot_copy(){
  
   # Get matched files using filtering
   local filename
-  files="$(snapshot_list_ "$fromdir" "$ns" "$name" "$tag")"
+  files="$(snapshot_list_ "$repodir" "$ns" "$name" "$tag")"
   if [ -z "$files" ]; then
     return 2
   fi
@@ -22,7 +22,7 @@ snapshot_copy(){
     read -r name_ ns_ tag_ checksum_  <<< "$buf"
     filename=$(snapshot_filename "$ns_" "$name_" "$tag_")
    
-    cmd="cp \"$fromdir/$ns_/$filename--$checksum_.tar.gz\""
+    cmd="cp \"$repodir/$ns_/$filename--$checksum_.tar.gz\""
     cmd="$cmd \"$destdir/$filename--$checksum_.tar.gz\""
 
     if cfg_testflags "opts" "$F_DRYRUN"; then

@@ -22,6 +22,10 @@ cfg_get(){
     IFS=$'\x1d'
     read -r -a fields <<< "$record"
     if [ "${fields[0]}" = "$1" ]; then
+      # empty strings including spaces are considered invalid values
+      if [ -z "${fields[1]}" ]; then
+        break
+      fi
       printf "%b" "${fields[1]}"
       return 0
     fi

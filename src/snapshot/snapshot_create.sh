@@ -57,14 +57,17 @@ snapshot_buildcmds(){
   return 0
 }
 
+# create name [tag [namespace]]
 snapshot_create(){
   local buf destdir errno
-  local namespace name tag
+  local ns name tag
 
-  local IFS=$'\x34'
-  read -r namespace name tag <<< "$(printf "%b" "$1\x34$2\x34$3")"
+  local IFS=$'\x34'; read -r ns name tag \
+    <<< "$(printf "%b" "$1\x34$2\x34$3")"
 
-  # create <name> [options]
+  echo "ns $ns name $name tag $tag"
+  return 1
+
   if [ -z "$name" ]; then
     errmsg "Name is empty. You must specify a name"
     return 1
@@ -82,7 +85,7 @@ snapshot_create(){
   fi
   
   # Get destination directory and initialize it if not existing
-  destdir=$(snapshot_destdir "$namespace")
+  destdir=$(snapshot_destdir "$ns")
   snapshot_initdestdir "$destdir"
   errno=$?
   if [ $errno -ne 0 ]; then
@@ -93,7 +96,7 @@ snapshot_create(){
   # Create snapshot backup for an existing snapshot
   # The backup file will be restored in case of an error
   local filename
-  filename=$(snapshot_filename "$namespace" "$name" "$tag")
+  filename=$(snapshot_filename "$ns" "$name" "$tag")
 
   # Replace {{filename}} token with actual filename value
   buf=$(printf "%s" "$buf" | sed "s#{{filename}}#$destdir/$filename.tmp#")

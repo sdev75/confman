@@ -113,20 +113,22 @@ snapshot_filter_hash(){
   done <<< "$(</dev/stdin)"
 }
 
-snapshot_file_details_(){
-  local dir buf a t
+snapshot_details_(){
+  local buf a t
   local filename
   local created size id
 
-  dir="$1"
   local fs rs; fs="$CONFMAN_FS"; rs=$'\x0a'
   while read -r buf; do
-
     if [ -z "$buf" ]; then
       continue
     fi
 
     IFS="$fs"; read -r -a a <<< "$buf"
+
+    if [ "${a[1]}" = "" ]; then
+      break
+    fi
 
     filename="$dir/${a[1]}/${a[0]}--${a[1]}--${a[2]}--${a[3]}.tar.gz"
     
@@ -150,7 +152,7 @@ snapshot_list_(){
   ns="$2"
   name="$3"
   tag="$4"
- 
+
   # Find by checksum
   snapshot_find_ "$dir" \
     | snapshot_filter_hash "$name"
@@ -169,12 +171,12 @@ snapshot_list(){
   ns="$2"
   name="$3"
   tag="$4" 
-
+  
   local fs rs; fs="$CONFMAN_FS"; rs=$'\n'
   printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s${rs}" \
     "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE"
 
   snapshot_list_ "$dir" "$ns" "$name" "$tag" \
-    | snapshot_file_details_ "$dir"
+    | snapshot_details_
 }
 
