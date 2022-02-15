@@ -92,7 +92,6 @@ init_parseopts(){
       ;;
     esac
   done
-
   # parse arguments
   while true; do
     case "$1" in
@@ -163,6 +162,7 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts "$@"
+  cfg_testflags "opts" "$F_DRYRUN"
   init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
   # includedir & lookup
   # Determines the include path of '.confman' file
