@@ -4,6 +4,11 @@ cfg_get(){
   echo "${!cfgvar_:=$2}"
 }
 cfg_set(){
+  if [ -z "$2" ]; then 
+    return 1
+  fi
+  local cfgvar_
+  cfgvar_="cfgvar__$1"
   eval "cfgvar__${1}=\"${2}\""
 }
 

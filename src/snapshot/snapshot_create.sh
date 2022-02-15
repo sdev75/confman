@@ -65,9 +65,6 @@ snapshot_create(){
   local IFS=$'\x34'; read -r ns name tag \
     <<< "$(printf "%b" "$1\x34$2\x34$3")"
 
-  echo "ns $ns name $name tag $tag"
-  return 1
-
   if [ -z "$name" ]; then
     errmsg "Name is empty. You must specify a name"
     return 1
