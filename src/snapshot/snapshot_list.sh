@@ -1,7 +1,6 @@
 
 snapshot_find_dirs_(){
   if [ ! -d "$1/" ]; then
-    echo ''
     return 1
   fi
   printf "%s\n" \
@@ -9,13 +8,12 @@ snapshot_find_dirs_(){
 }
 
 snapshot_find_files_(){
-  local buf
-  while read -r buf; do
-    if [ -z "$buf" ]; then
-      continue
-    fi
-    printf "%s\n" \
-      "$(find "$buf" -type f -name '*.tar.gz' -printf '%p\n')"
+  local path
+  while read -r path; do
+    #if [ -z "$buf" ]; then
+    #  continue
+    #fi
+    find "$path" -type f -name '*.tar.gz' -printf '%p\n' 2>/dev/null
   done <<< "$(</dev/stdin)"
 }
 
@@ -39,7 +37,7 @@ snapshot_filter_namespace(){
 
 snapshot_transform_split_filename_(){
   local buf basename
-
+  
   local fs rs; fs=$CONFMAN_FS; rs=$'\x0a'
   while read -r buf; do
     basename="$(basename "$buf" | sed s/.tar.gz//)"
@@ -91,6 +89,7 @@ snapshot_filter_tag(){
 
 snapshot_filter_name(){
   snapshot_filter_index "0" "$1"
+
 }
 
 # filter by hash
@@ -117,7 +116,7 @@ snapshot_details_(){
   local buf a t
   local filename
   local created size id
-
+ 
   local fs rs; fs="$CONFMAN_FS"; rs=$'\x0a'
   while read -r buf; do
     if [ -z "$buf" ]; then
@@ -171,7 +170,7 @@ snapshot_list(){
   ns="$2"
   name="$3"
   tag="$4" 
-  
+
   local fs rs; fs="$CONFMAN_FS"; rs=$'\n'
   printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s${rs}" \
     "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE"
