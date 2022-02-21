@@ -31,30 +31,23 @@ snapshot_filename(){
 }
 
 snapshot_printf(){
-  local buf a i fmt ofmt
-  local destdir
+  local buf a i fmt
 
   fmt="$1"
   while read buf; do
     IFS="$CONFMAN_FS"
     read -r -a a <<< "$buf"
-    ofmt="$fmt"
+    
     # match pattern
-    i=$(expr index "$ofmt" "%p")
+    i=$(expr index "$fmt" "%p")
     if [ $i -ne -1 ]; then
       # replace pattern
-      destdir="$(snapshot_destdir "${a[1]}")"
-      filename="$(snapshot_filename "${a[1]}" "${a[0]}" "${a[2]}")"
-      filename="${destdir}/${filename}--${a[3]}.tar.gz"
-      ofmt="$(printf "%s" "$ofmt" | sed "s|%p|$filename|")"
+      filename="$(snapshot_filename "${a[1]}" "${a[1]}" "${a[2]}").tar.gz"
+      fmt="$(printf "%s" "$fmt" | sed 's/%p/$filename/')"
     fi
-    i=$(expr index "$ofmt" "%n")
-    if [ $i -ne -1 ]; then
-      ofmt="$(printf "%s" "$ofmt" | sed "s/%n/${a[0]}/")"
-    fi
-    printf "%b" "$ofmt"
+    printf "%b" "$fmt"
   done <<< "$(</dev/stdin)"
 
-  return 0 
+  return 1 
 }
 

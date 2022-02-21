@@ -174,8 +174,19 @@ snapshot_list(){
   local fs rs; fs="$CONFMAN_FS"; rs=$'\n'
   printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s${rs}" \
     "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE"
-
   snapshot_list_ "$dir" "$ns" "$name" "$tag" \
     | snapshot_details_
 }
 
+snapshot_list_printf(){
+  local dir ns name tag fmt
+  
+  dir="$1"
+  ns="$2"
+  name="$3"
+  tag="$4"
+  fmt="$5"
+
+  snapshot_list_ "$dir" "$ns" "$name" "$tag" \
+    | snapshot_printf "$fmt"
+}

@@ -39,14 +39,13 @@ A configuration file acts as set of rules to map several files into groups or co
 Here is a pseudo configuration data:
 
 ```
-
-group1 {
+name1 {
   relative/path/to/my/file.ext
   /absolute/path/to/my/other/file.ext
   directories/end/up/with/slashes/
 }
 
-group2 {
+name2 {
   <file>
   <directory>/
 }
@@ -60,13 +59,10 @@ confman -c /etc/.confman
 ```
 
 ## Basic usage
-
 ### Snapshot
-
 Snapshots are archived data with gzip compression. They are stored structurally within the cache directory of confman. They can be moved, copied, saved and restored. More details will come in the future.
 
 #### Snapshot Create
-
 A snapshot can be created by using the `create` action. This takes a mandatory `name` parameter used to specify the target of the snapshot, or the final name used to store the archived gzipped data.
 
 ```sh
@@ -100,8 +96,7 @@ The default output format is the following:
 ```
 
 #### Listing Snapshots
-
-List information about snapshots created. Thes are seveal possibile ways to filter the data. Below are a few example:
+List information about snapshots created. There are seveal possibile ways to filter the data. Below are a few example:
 
 ```sh
 # Print everything
@@ -123,8 +118,18 @@ confman ls <name> <tag> <namespace>
 confman ls -t <tag> -n <namespace>
 ```
 
-#### Copying snapshots
+It is possible to print the filenames only without any tables. Useful for handling the data with a script.
 
+```sh
+confman ls vim --printf '%p\n'
+
+# looping through files
+for filename in $(confman ls vim --printf '%p\n'); do echo "$filename"; done
+```
+
+Bear in mind this tool is written in shell scripting language, thus these formatting and commands might be quite slow to process. Usually around 0.1 seconds on average. I find this to be acceptable considering this utility will only be used for performing seldom backups.
+
+#### Copying snapshots
 A snapshot can be copied to a destination directory. This is useful when doing backups for specific snapshots.
 When copying a snapshot, the name of the snapshot along with a destination directory are mandatory arguments.
 The `name` field will attempt to match a valid name, including but not limited to a checksum value. It's important to notice that if multiple snapshots are matched, all the matched snapshots will be copied to the destination folder. Therefore, attention should be paid when entering a name value to avoid
@@ -153,9 +158,8 @@ confman cp vim -t "" -n "" /home/backups
 
 # Copy all snapshots with any tag and specific namespace
 confman cp vim -t "" -n "mynamespace" /home/backups
-
 ```
 
 ### More to come
 
-More info will be added here.
+More info will be added here

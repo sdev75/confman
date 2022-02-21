@@ -36,12 +36,14 @@ init_flags(){
   readonly F_PARSE_ONLY=$((2 << 0))
   readonly F_DRYRUN=$((4 << 0))
   readonly F_FORCE=$((8 << 0))
+  readonly F_PRINTF=$((16 << 0))
 }
 
 init_parseopts(){
   local shortargs longargs opts
   shortargs="hc:t:n:f"
   longargs="help,config:,parse,repodir:,tag:,namespace:,dryrun,force"
+  longargs="$longargs,printf:"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
   if [ $? -ne 0 ]; then
     exit $?
@@ -81,6 +83,11 @@ init_parseopts(){
       -f|--force)
         cfg_set "opts" "$F_FORCE"
         shift
+        ;;
+      --printf)
+        cfg_set "opts" "$F_PRINTF"
+        cfg_set "printf" "$2"
+        shift 2
         ;;
       --)
         shift
@@ -252,7 +259,13 @@ dispatch_snapshot(){
     namespace=$(cfg_get "namespace" "")
     name=$(cfg_get "name" "")
     tag=$(cfg_get "tag" "")
-    
+  
+    if cfg_testflags "opts" "$F_PRINTF"; then
+      local fmt="$(cfg_get "printf")"
+      snapshot_list_printf "$repodir" "$namespace" "$name" "$tag" "$fmt"
+      return $?
+    fi
+
     snapshot_list "$repodir" "$namespace" "$name" "$tag" \
       | column -s "$CONFMAN_FS" -t
     return $?
