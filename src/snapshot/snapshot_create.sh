@@ -46,6 +46,7 @@ snapshot_buildcmds(){
     eval "src=\"${fields[1]}\""
     parentdir="$(realpath "${src}")"
     basename="$(basename "$parentdir")"
+    parentdir="$(dirname "$parentdir")"
     #t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
     t2="tar --append --file=\"{{filename}}\""
     sbuf="${sbuf}${t2} -C \"$parentdir\" \"$basename\"\n"
