@@ -15,6 +15,7 @@ snapshot_buildcmds(){
   # Iterate through parsed configuration data
   local records fields sbuf
   local parentdir src t1 t2
+  local basename
 
   local IFS
   IFS=$CONFMAN_RS
@@ -43,10 +44,11 @@ snapshot_buildcmds(){
     #
     # evaluate variables such as $HOME
     eval "src=\"${fields[1]}\""
-    parentdir=$(dirname "${src}")
-    t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
+    parentdir="$(realpath "${src}")"
+    basename="$(basename "$parentdir")"
+    #t1=$(printf "%s" "$src" | sed "s#$parentdir/##")
     t2="tar --append --file=\"{{filename}}\""
-    sbuf="${sbuf}${t2} -C \"$parentdir\" \"$t1\"\n"
+    sbuf="${sbuf}${t2} -C \"$parentdir\" \"$basename\"\n"
   done
   
   if [ -z "$name_" ]; then
