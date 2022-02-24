@@ -11,8 +11,8 @@ snapshot_remove(){
     echo "OK. Nothing to remove."
     return 0
   fi
-
-  for buf in "$files"; do
+ 
+  while read buf; do
     IFS="$CONFMAN_FS"
     read -r name_ ns_ tag_ hash_ <<< "$buf"
     
@@ -30,7 +30,7 @@ snapshot_remove(){
     fi
 
     printf "%s\n" "OK Deleted: '$filename--$hash_.tar.gz'"
-  done
+  done <<< "${files[@]}"
 
   return 0
 }
