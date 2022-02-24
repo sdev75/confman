@@ -1,7 +1,7 @@
 snapshot_remove(){
   local repodir name tag ns
 
-  repodir="$1"; ns="$2"; name="$3"; tag="$4"
+  repodir="$1" ns="$2" name="$3" tag="$4"
 
   echo "repo: $repodir ns $ns name $name tag $tag"
   local buf files

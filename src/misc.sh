@@ -4,7 +4,7 @@ Usage confman [OPTIONS]
 
 Global Options:
   -h, --help      Prints this message
-  -c, --config      Configuration file to read
+  -c, --config    Configuration file to read
       --parse     Parse configuration, print it then exit
       --dryrun    Show commands to be executed without executing them
   -f, --force     Force certain operations, such as overwriting existing files
@@ -14,12 +14,18 @@ Snapshot Commands:
   ls, list        Usage: confman ls [name [tag [namespace]]]
   rm, remove      Usage: confman rm [name [tag [namespace]]]
   cp, copy        Usage: confman cp [name [tag [namespace]]] destdir
+      import      Usage: confman import filename [name [tag [namespace]]
       restore     Usage: confman restore filename [name [tag [namespace]]]
+
+Snapshot Scanning:
+  Scanning allows confman to search for files within the repodir or within a specified directory
+  All files mathing the naming pattern will be reorganized within the confman repository.
+  Existing snapshots will not be imported unless forced to do so excplitily with the --force flag
+      scan        Usage: confman scan [srcdir]  
 
 Snapshot Options:
   -t, --tag       Set snapshot tag value
   -n, --ns        Set snapshot namespace value
-
 ")
 
 errmsg(){

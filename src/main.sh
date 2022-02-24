@@ -8,10 +8,11 @@
 #include snapshot/snapshot_list.sh
 #include snapshot/snapshot_copy.sh
 #include snapshot/snapshot_remove.sh
+#include snapshot/snapshot_import.sh
 
 # Set default repodir 
 # default value to ~/.cache/confman
-# Its possible to pass the value by ENV using REPODIR=. confman
+# It's possible to pass the value by ENV using REPODIR=. confman
 init_repodir(){
   local repodir
 
@@ -64,7 +65,7 @@ init_parseopts(){
         shift 2
         ;;
       -c|--config)
-        cfg_setflags opts $F_CONFMAN_FILE
+        cfg_setflags "opts" $F_CONFMAN_FILE
         cfg_set "confman" "$2"
         shift 2
         ;;
@@ -77,15 +78,15 @@ init_parseopts(){
         shift 2
         ;;
       --dryrun)
-        cfg_set "opts" "$F_DRYRUN"
+        cfg_setflags "opts" "$F_DRYRUN"
         shift
         ;;
       -f|--force)
-        cfg_set "opts" "$F_FORCE"
+        cfg_setflags "opts" "$F_FORCE"
         shift
         ;;
       --printf)
-        cfg_set "opts" "$F_PRINTF"
+        cfg_setflags "opts" "$F_PRINTF"
         cfg_set "printf" "$2"
         shift 2
         ;;
@@ -141,11 +142,9 @@ init_parseopts(){
           cfg_set "destdir" "$4"
           cfg_set "tag" "$3"
           cfg_set "name" "$2"
-          shift 3
         elif [ ${#@} -eq 3 ]; then
           cfg_set "destdir" "$3"
           cfg_set "name" "$2"
-          shift 2
         fi
         shift ${#@}
         ;;
@@ -156,6 +155,22 @@ init_parseopts(){
         cfg_set "namespace" "$4"
         cfg_set "tag" "$3"
         cfg_set "name" "$2"
+        shift ${#@}
+        ;;
+      import)
+        cfg_set "action" "import"
+        if [ ${#@} -eq 5 ]; then
+          cfg_set "namespace" "$5"
+          cfg_set "tag" "$4"
+          cfg_set "name" "$3"
+        elif [ ${#@} -eq 4 ]; then
+          cfg_set "tag" "$4"
+          cfg_set "name" "$3"
+        elif [ ${#@} -eq 3 ]; then
+          cfg_set "name" "$3"
+        fi
+
+        cfg_set "filename" "$2"
         shift ${#@}
         ;;
       *)
@@ -209,16 +224,7 @@ dispatch(){
   
   action=$(cfg_get "action" "none")
   case "$action" in
-    create)
-      dispatch_snapshot "$action"
-      ;;
-    copy)
-      dispatch_snapshot "$action"
-      ;;
-    list)
-      dispatch_snapshot "$action"
-      ;;
-    remove)
+    create|copy|list|remove|import)
       dispatch_snapshot "$action"
       ;;
     *)
@@ -279,6 +285,18 @@ dispatch_snapshot(){
     tag=$(cfg_get "tag" "latest")
     
     snapshot_remove "$repodir" "$namespace" "$name" "$tag"
+    return $?
+  fi
+
+  if [ "$1" = "import" ]; then
+    local repodir ns name tag
+    repodir="$(cfg_get "repodir")"
+    filename="$(cfg_get "filename")"
+    namespace=$(cfg_get "namespace" "")
+    name=$(cfg_get "name" "")
+    tag=$(cfg_get "tag" "")
+
+    snapshot_import "$repodir" "$filename" "$namespace" "$name" "$tag"
     return $?
   fi
 

@@ -1,7 +1,4 @@
 
-# Create tarball and gzip it using attributes such as TAG
-# int snapshot_create (tag)
-##
 snapshot_initdestdir(){
   local destdir
 
@@ -28,6 +25,30 @@ snapshot_filename(){
   IFS=$'\x34'
   read -r namespace name tag <<< "$(printf "%b" "${1}\x34${2}\x34${3}")"
   echo "${name}--${namespace}--${tag}"
+}
+
+# parse filename
+# char* filename_parse(char* filename, char** parsed)
+snapshot_filename_parse(){
+  local filename
+  local -n arr
+  filename="${1}--"
+  arr=$2
+  while [ -n "$filename" ]; do
+    arr+=( "${filename%%--*}" )
+    filename="${filename#*--}"
+  done
+
+  # parse hash value when available
+  if [ "${#arr[@]}" -eq 4 ]; then
+    arr=("${arr[@]:0:3}" "${arr[3]%%\.*}")
+    return 0
+  fi
+
+  # valid data contains no less than 3 chunks
+  if [ "${#arr[@]}" -ne 3 ]; then
+    return 1
+  fi
 }
 
 snapshot_printf(){

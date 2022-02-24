@@ -60,7 +60,13 @@ confman -c /etc/.confman
 
 ## Basic usage
 ### Snapshot
-Snapshots are archived data with gzip compression. They are stored structurally within the cache directory of confman. They can be moved, copied, saved and restored. More details will come in the future.
+Snapshots are archived data with gzip compression. They are stored structurally within the repository directory of confman. They can be moved, copied, saved and restored. More details will come in the future.
+
+A repository directory can be set with the `--repodir` flag:
+
+```sh
+confman --repodir /my/repodir
+```
 
 #### Snapshot Create
 A snapshot can be created by using the `create` action. This takes a mandatory `name` parameter used to specify the target of the snapshot, or the final name used to store the archived gzipped data.
@@ -73,7 +79,7 @@ confman create vim
 Snapshots can be aggregated using namespaces and tags. These can be passed in as optional parameters when creating a snapshot.
 
 ```sh
-confman create vim [namespace [tag]]
+confman create vim [tag [namespace]]
 ```
 
 A tag can also be passed in using the `-t` option.
@@ -160,6 +166,21 @@ confman cp vim -t "" -n "" /home/backups
 confman cp vim -t "" -n "mynamespace" /home/backups
 ```
 
-### More to come
+#### Importing  a snapshot
 
-More info will be added here
+It's possible to import a snapshot from an existing file. The only requirements to follow is the naming of the file as follows:
+
+```
+<name>--<namespace>--<tag>--<checksum>.tar.gz
+```
+
+Restoring a snapshot will simply parse the filename and store it within the active `repodir` within the correct folder structure. It is possbile to overwrite the naming parameters with the `-t` flag for setting a tag, `-n` flag for the namespace and a name to override the data while importing.
+
+```sh
+confman import <filename>
+confman import <filename> -t test -n mynamespace
+confman import <filename> name1 -t tag2
+```
+
+### More to come
+More details will be added here

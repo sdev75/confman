@@ -96,8 +96,8 @@ snapshot_create(){
   # Create snapshot backup for an existing snapshot
   # The backup file will be restored in case of an error
   local filename
-  filename=$(snapshot_filename "$ns" "$name" "$tag")
-
+  filename="$(snapshot_filename "$ns" "$name" "$tag")"
+  
   # Replace {{filename}} token with actual filename value
   buf=$(printf "%s" "$buf" | sed "s#{{filename}}#$destdir/$filename.tmp#")
 
