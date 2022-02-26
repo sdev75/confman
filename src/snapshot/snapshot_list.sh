@@ -153,7 +153,7 @@ snapshot_list_(){
   tag="$4"
 
   # Find by checksum
-  snapshot_find_ "$dir" \
+  snapshot_find_ "$dir" "$ns" \
     | snapshot_filter_tag "$tag" \
     | snapshot_filter_hash "$name"
   
