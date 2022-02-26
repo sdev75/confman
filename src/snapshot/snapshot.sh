@@ -21,9 +21,10 @@ snapshot_destdir(){
 # Resolve the filename for each snapshot
 # void getfilename (namespace, name, tag)
 snapshot_filename(){
-  local namespace name tag
-  IFS=$'\x34'
-  read -r namespace name tag <<< "$(printf "%b" "${1}\x34${2}\x34${3}")"
+  local namespace name tag fs
+  fs="$CONFMAN_FS" IFS="$fs"
+  read -r namespace name tag \
+    <<< "$(printf "%b" "${1}${fs}${2}${fs}${3}")"
   echo "${name}--${namespace}--${tag}"
 }
 

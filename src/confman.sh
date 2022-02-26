@@ -33,7 +33,7 @@ confman_parse_(){
 #include confman.awk
   ')
 
-  buf=$(awk -v fs=$"\x1d" -v rs=$"\x1e" "${script[0]}" "$1")
+  buf=$(awk -v fs="$CONFMAN_FS" -v rs="$CONFMAN_RS" "${script[0]}" "$1")
  
   res=$?
   printf "%s" "$buf" | xxd -p
@@ -53,7 +53,7 @@ confman_parse(){
 
 # We use x1e and x1d as record and field separator respectively
 CONFMAN_RS=$'\x1e'
-CONFMAN_FS=$'\x1d'
+CONFMAN_FS=$'\x1f'
 
 confman_print(){
   local buf records fields

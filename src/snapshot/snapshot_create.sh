@@ -11,7 +11,7 @@ snapshot_buildcmds(){
   # hex to string
   buf=$(printf "%s" "$buf" | xxd -p -r)
   
-##
+  ##
   # Iterate through parsed configuration data
   local records fields sbuf
   local parentdir src t1 t2
@@ -21,7 +21,7 @@ snapshot_buildcmds(){
   IFS=$CONFMAN_RS
   read -r -a records <<< "$buf"
   for record in "${records[@]}"; do
-    IFS=$CONFMAN_FS
+    IFS="$CONFMAN_FS"
     read -r -a fields <<< "$record"
     if [ ${#fields[@]} -eq 1 ]; then
       #
