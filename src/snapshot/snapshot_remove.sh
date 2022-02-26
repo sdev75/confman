@@ -23,7 +23,7 @@ snapshot_remove(){
       continue
     fi
 
-    err=$(eval "$cmd 2>&1"); errno=$?
+    err=$(eval "$cmd 2>&1") errno=$?
     if [ $errno -ne 0 ]; then
       errmsg "Could not remove snapshot: $err Errno: $errno"
       return $errno

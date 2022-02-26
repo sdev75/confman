@@ -176,14 +176,14 @@ init_parseopts(){
         ;;
       extract)
         cfg_set "action" "extract"
-        if [ ${#@} -eq 3 ]; then
-          cfg_set "what" "$3"
-          cfg_set "where" "$2"
-        elif [ ${#@} -eq 2 ]; then
-          cfg_set "where" "$2"
+        if [ ${#@} -eq 4 ]; then
+          cfg_set "what" "$4"
+          cfg_set "where" "$3"
+        elif [ ${#@} -eq 3 ]; then
+          cfg_set "where" "$3"
         fi
-
-        cfg_set "name" "$1"
+        
+        cfg_set "name" "$2"
         shift ${#@}
         ;;
       *)

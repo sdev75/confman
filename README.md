@@ -166,7 +166,7 @@ confman cp vim -t "" -n "" /home/backups
 confman cp vim -t "" -n "mynamespace" /home/backups
 ```
 
-#### Importing  a snapshot
+#### Importing a snapshot
 
 It's possible to import a snapshot from an existing file. The only requirements to follow is the naming of the file as follows:
 
@@ -180,6 +180,21 @@ Restoring a snapshot will simply parse the filename and store it within the acti
 confman import <filename>
 confman import <filename> -t test -n mynamespace
 confman import <filename> name1 -t tag2
+```
+
+#### Extracting a snapshot
+
+Extracting a snapshot is the same as unzipping the contents of the snapshots to the destination directory. It is also possible to extract only specific contents. Additional parameters can be passed in using optional flags such as `-t` for tag and `-n` for namespace. Existing files will not be overwritten, this can be changed using the `--force|-f` option flags. It's also possible to use the checksum digits to identify the snapshot as usual.
+
+```sh
+# Extract snapshot data using name and destination
+confman extract <name> [dest]
+
+# Extract snapshot data using custom namespace
+confman extract <name> -n ns1 [dest]
+
+# Extract only one specific file
+confman extract <name> [dest] .vimrc
 ```
 
 ### More to come
