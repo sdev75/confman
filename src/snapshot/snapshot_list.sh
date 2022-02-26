@@ -154,6 +154,7 @@ snapshot_list_(){
 
   # Find by checksum
   snapshot_find_ "$dir" \
+    | snapshot_filter_tag "$tag" \
     | snapshot_filter_hash "$name"
   
   if [ $? -ne 0 ]; then
