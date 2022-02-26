@@ -9,6 +9,7 @@
 #include snapshot/snapshot_copy.sh
 #include snapshot/snapshot_remove.sh
 #include snapshot/snapshot_import.sh
+#include snapshot/snapshot_extract.sh
 
 # Set default repodir 
 # default value to ~/.cache/confman
@@ -173,6 +174,18 @@ init_parseopts(){
         cfg_set "filename" "$2"
         shift ${#@}
         ;;
+      extract)
+        cfg_set "action" "extract"
+        if [ ${#@} -eq 3 ]; then
+          cfg_set "what" "$3"
+          cfg_set "where" "$2"
+        elif [ ${#@} -eq 2 ]; then
+          cfg_set "where" "$2"
+        fi
+
+        cfg_set "name" "$1"
+        shift ${#@}
+        ;;
       *)
         shift
         ;;
@@ -224,7 +237,7 @@ dispatch(){
   
   action=$(cfg_get "action" "none")
   case "$action" in
-    create|copy|list|remove|import)
+    create|copy|list|remove|import|extract)
       dispatch_snapshot "$action"
       ;;
     *)
@@ -300,6 +313,18 @@ dispatch_snapshot(){
     return $?
   fi
 
+  if [ "$1" = "extract" ]; then
+    local repodir name tag ns what where
+    repodir="$(cfg_get "repodir")"
+    name="$(cfg_get "name")"
+    tag="$(cfg_get "tag")"
+    namespace="$(cfg_get "namespace")"
+    what="$(cfg_get "what")"
+    where="$(cfg_get "where")"
+
+    snapshot_extract "$repodir" "$name" "$tag" "$namespace" "$what" "$where"
+    return $?
+  fi
   return 0
 }
 

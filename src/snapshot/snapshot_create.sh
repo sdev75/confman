@@ -10,8 +10,8 @@ snapshot_buildcmds(){
 
   # hex to string
   buf=$(printf "%s" "$buf" | xxd -p -r)
- 
-  ##
+  
+##
   # Iterate through parsed configuration data
   local records fields sbuf
   local parentdir src t1 t2
@@ -64,15 +64,15 @@ snapshot_buildcmds(){
 snapshot_create(){
   local buf destdir errno
   local ns name tag
-
-  local IFS=$'\x34'; read -r ns name tag \
-    <<< "$(printf "%b" "$1\x34$2\x34$3")"
+  
+  local IFS=$'\x1f'; read -r ns name tag \
+    <<< "$(printf "%b" "$1\x1f$2\x1f$3")"
 
   if [ -z "$name" ]; then
     errmsg "Name is empty. You must specify a name"
     return 1
   fi
-
+  
   buf=$(snapshot_buildcmds "$name")
   errno=$?
   if [ $errno -ne 0 ]; then
