@@ -23,6 +23,13 @@ snapshot_extract(){
     return 0
   fi
 
+  local tarflags
+  if cfg_testflags "opts" "$F_LIST_CONTENTS"; then
+    tarflags="-ztf"
+  else
+    tarflags="-zxf"
+  fi
+  
   while read buf; do
     IFS="$CONFMAN_FS"
     read -r name_ ns_ tag_ hash_ <<< "$buf"
@@ -31,9 +38,9 @@ snapshot_extract(){
     filename="$filename--${hash_}.tar.gz"
 
     if [ -n "$what" ]; then
-      cmd="tar -ztf '$repodir/$ns_/$filename' -C '$where' '$what'"
+      cmd="tar $tarflags '$repodir/$ns_/$filename' -C '$where' '$what'"
     else
-      cmd="tar -ztf '$repodir/$ns_/$filename' -C '$where'"
+      cmd="tar $tarflags '$repodir/$ns_/$filename' -C '$where'"
     fi
 
     if cfg_testflags "opts" "$F_DRYRUN"; then
@@ -42,6 +49,13 @@ snapshot_extract(){
     fi
 
     err=$(eval "$cmd 2>&1") errno=$?
+    if cfg_testflags "opts" "$F_LIST_CONTENTS"; then
+      # err could be renamed for clarify sake
+      # it contains the actual output of the tar command
+      # in the case of a --contents flag set, the buffer is printed out
+      echo "$err"
+      return $errno 
+    fi
     if [ $errno -ne 0 ]; then
       errmsg "Could not extract snapshot: $err Errno: $errno"
       return $errno

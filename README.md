@@ -197,5 +197,13 @@ confman extract <name> -n ns1 [dest]
 confman extract <name> [dest] .vimrc
 ```
 
+##### Listing contents of a snapshot
+
+It's possible to list the contents during extraction without actually extracting the data by using the `--contents` flag. This will list the contents of the snapshot and exit the program without performing the extract operation. This might come in handy to inspect the contents without using the tar utility manually.
+
+```sh
+confman extract <name> . --contents
+```
+
 ### More to come
 More details will be added here

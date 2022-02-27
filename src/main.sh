@@ -39,13 +39,14 @@ init_flags(){
   readonly F_DRYRUN=$((4 << 0))
   readonly F_FORCE=$((8 << 0))
   readonly F_PRINTF=$((16 << 0))
+  readonly F_LIST_CONTENTS=$((32 << 0))
 }
 
 init_parseopts(){
   local shortargs longargs opts
   shortargs="hc:t:n:f"
   longargs="help,config:,parse,repodir:,tag:,namespace:,dryrun,force"
-  longargs="$longargs,printf:"
+  longargs="$longargs,printf:,contents"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
   if [ $? -ne 0 ]; then
     exit $?
@@ -90,6 +91,10 @@ init_parseopts(){
         cfg_setflags "opts" "$F_PRINTF"
         cfg_set "printf" "$2"
         shift 2
+        ;;
+      --contents)
+        cfg_setflags "opts" "$F_LIST_CONTENTS"
+        shift
         ;;
       --)
         shift
