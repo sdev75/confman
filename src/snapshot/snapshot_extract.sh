@@ -20,6 +20,10 @@ snapshot_extract(){
   if cfg_testflags "opts" "$F_LIST_CONTENTS"; then
     tarflags="-ztf"
     tardircmd=""
+    # Switch "where" for "what"
+    if [ -n "$where" ]; then
+      what="$where"
+    fi
   else
     tarflags="-zxf"
     if [ -z "$where" ]; then
