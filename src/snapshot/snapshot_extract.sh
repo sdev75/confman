@@ -8,13 +8,6 @@ snapshot_extract(){
   repodir="$1" name="$2" tag="$3" ns="$4"
   what="$5" where="$6"
 
-  if [ -z "$where" ]; then
-    errmsg "Error. Param <where> missing or invalid."
-    return 1
-  fi
-
-  where="$(realpath "$where")"
-
   local buf files err errno
   local name_ ns_ tag_ hash_
   files="$(snapshot_list_ "$repodir" "$ns" "$name" "$tag")"
@@ -23,11 +16,18 @@ snapshot_extract(){
     return 0
   fi
 
-  local tarflags
+  local tarflags tardircmd
   if cfg_testflags "opts" "$F_LIST_CONTENTS"; then
     tarflags="-ztf"
+    tardircmd=""
   else
     tarflags="-zxf"
+    if [ -z "$where" ]; then
+      errmsg "Error. Param <where> missing or invalid."
+      return 1
+    fi
+    where="$(realpath "$where")"
+    tardircmd="-C '$where'"
   fi
   
   while read buf; do
@@ -38,9 +38,9 @@ snapshot_extract(){
     filename="$filename--${hash_}.tar.gz"
 
     if [ -n "$what" ]; then
-      cmd="tar $tarflags '$repodir/$ns_/$filename' -C '$where' '$what'"
+      cmd="tar $tarflags '$repodir/$ns_/$filename' $tardircmd '$what'"
     else
-      cmd="tar $tarflags '$repodir/$ns_/$filename' -C '$where'"
+      cmd="tar $tarflags '$repodir/$ns_/$filename' $tardircmd"
     fi
 
     if cfg_testflags "opts" "$F_DRYRUN"; then
