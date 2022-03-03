@@ -4,9 +4,6 @@ snapshot_remove(){
   repodir="$1" ns="$2" name="$3" tag="$4"
   echo "repo '$repodir' namespace '$ns' name '$name' tag '$tag'"
   
-  snapshot_list_ "$repodir" "$ns" "$name" "$tag"
-  exit
-    
   local buf files
   files="$(snapshot_list_ "$repodir" "$ns" "$name" "$tag")"
 
