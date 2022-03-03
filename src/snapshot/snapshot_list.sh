@@ -152,11 +152,28 @@ snapshot_list_(){
   name="$3"
   tag="$4"
 
-  # Find by checksum
-  snapshot_find_ "$dir" "$ns" \
-    | snapshot_filter_tag "$tag" \
-    | snapshot_filter_hash "$name"
-  
+  # Find by checksum 
+  # Use namespace only when explicitly requested `-n <namespace>`
+  if [ -n "$(cfg_get "namespace")" ]; then
+    snapshot_find_ "$dir" "$ns" \
+      | ( 
+        if [ -n "$(cfg_get "tag")" ]; then \
+          snapshot_filter_tag "$tag"; \
+        else \
+          echo "$(</dev/stdin)"; fi \
+        ) \
+      | snapshot_filter_hash "$name"
+  else
+    snapshot_find_ "$dir" \
+      | ( 
+        if [ -n "$(cfg_get "tag")" ]; then \
+          snapshot_filter_tag "$tag"; \
+        else \
+          echo "$(</dev/stdin)"; fi \
+        ) \
+      | snapshot_filter_hash "$name"
+  fi
+
   if [ $? -ne 0 ]; then
     snapshot_find_ "$dir" "$ns" \
       | snapshot_filter_tag "$tag" \
@@ -175,6 +192,7 @@ snapshot_list(){
   local fs rs; fs="$CONFMAN_FS"; rs=$'\n'
   printf "%s${fs}%s${fs}%s${fs}%s${fs}%s${fs}%s${rs}" \
     "NAMESPACE" "NAME" "TAG" "ID" "CREATED" "SIZE"
+  
   snapshot_list_ "$dir" "$ns" "$name" "$tag" \
     | snapshot_details_
 }
