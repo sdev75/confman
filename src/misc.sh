@@ -5,9 +5,11 @@ Usage confman [OPTIONS]
 Global Options:
   -h, --help      Prints this message
   -c, --config    Configuration file to read
-      --parse     Parse configuration, print it then exit
       --dryrun    Show commands to be executed without executing them
   -f, --force     Force certain operations, such as overwriting existing files
+
+Configuration Commands:
+      parse       Parse configuration, print it then exit
 
 Snapshot Commands:
       create      Usage: confman create [name [tag [namespace]]]
@@ -16,6 +18,7 @@ Snapshot Commands:
   cp, copy        Usage: confman cp [name [tag [namespace]]] destdir
       import      Usage: confman import filename [name [tag [namespace]]
       restore     Usage: confman restore filename [name [tag [namespace]]]
+      peek        Usage: confman peek name [what]
 
 Snapshot Scanning:
   Scanning allows confman to search for files within the repodir or within a specified directory

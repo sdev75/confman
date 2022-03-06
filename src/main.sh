@@ -10,6 +10,7 @@
 #include snapshot/snapshot_remove.sh
 #include snapshot/snapshot_import.sh
 #include snapshot/snapshot_extract.sh
+#include snapshot/snapshot_peek.sh
 
 # Set default repodir 
 # default value to ~/.cache/confman
@@ -109,14 +110,19 @@ init_parseopts(){
   # parse arguments
   while true; do
     case "$1" in
-     # create name [tag [namespace]]
-     create)
-       cfg_set "action" "create"
-       cfg_set "namespace" "$4"
-       cfg_set "tag" "$3"
-       cfg_set "name" "$2"
-       shift ${#@}
-      ;;
+      # parse configuration data and exit
+      parse)
+        cfg_set "action" "parse"
+        shift ${#@}
+        ;;
+      # create name [tag [namespace]]
+      create)
+        cfg_set "action" "create"
+        cfg_set "namespace" "$4"
+        cfg_set "tag" "$3"
+        cfg_set "name" "$2"
+        shift ${#@}
+        ;;
       # list name [tag [namespace]]
       # list checksum
       ls | list)
@@ -191,6 +197,15 @@ init_parseopts(){
         cfg_set "name" "$2"
         shift ${#@}
         ;;
+      peek)
+        cfg_set "action" "peek"
+        if [ ${#@} -eq 3 ]; then
+          cfg_set "what" "$3"
+        fi
+        
+        cfg_set "name" "$2"
+        shift ${#@}
+        ;;
       *)
         shift
         ;;
@@ -226,29 +241,31 @@ init(){
 dispatch(){
   local buf action
   # Print processed conf without proceeding further
-  if cfg_testflags "opts" "$F_PARSE_ONLY"; then
-    echo "Using $(cfg_get confman)"
-    # Parse and process configuration file
-    buf=$(confman_parse "$(cfg_get confman)")
-    if [ $? -ne 0 ]; then
-      errmsg "An error has occurred while processing '$filename'"
-    fi
-    #echo "Printing parsed configuration formatted raw data below:"
-    #echo "$buf"
-    #echo "Formatted output:"
-    confman_print "$buf" | column -s $'\x1d' -t
-    exit
-  fi
   
   action=$(cfg_get "action" "none")
   case "$action" in
-    create|copy|list|remove|import|extract)
+    parse)
+      parse_and_exit
+      exit $?
+      ;;
+    create|copy|list|remove|import|extract|peek)
       dispatch_snapshot "$action"
       ;;
     *)
       errmsg "No route available for action '$action'"
+      help 1
       ;;
   esac
+}
+
+parse_and_exit(){
+  echo "Using $(cfg_get confman)"
+  # Parse and process configuration file
+  buf=$(confman_parse "$(cfg_get confman)")
+  if [ $? -ne 0 ]; then
+    errmsg "An error has occurred while processing '$filename'"
+  fi
+  confman_print "$buf" | column -s "$CONFMAN_FS" -t
 }
 
 dispatch_snapshot(){
@@ -328,6 +345,19 @@ dispatch_snapshot(){
     where="$(cfg_get "where")"
 
     snapshot_extract "$repodir" "$name" "$tag" "$namespace" "$what" "$where"
+    return $?
+  fi
+
+  if [ "$1" = "peek" ]; then
+    local repodir name tag ns what where
+    repodir="$(cfg_get "repodir")"
+    name="$(cfg_get "name")"
+    tag="$(cfg_get "tag")"
+    namespace="$(cfg_get "namespace")"
+    what="$(cfg_get "what")"
+
+    snapshot_peek "$repodir" "$name" "$tag" "$namespace" "$what" \
+      | column -s "$CONFMAN_FS" -t
     return $?
   fi
   return 0

@@ -199,11 +199,13 @@ confman extract <name> [dest] .vimrc
 
 ##### Listing contents of a snapshot
 
-It's possible to list the contents during extraction without actually extracting the data by using the `--contents` flag. This will list the contents of the snapshot and exit the program without performing the extract operation. This might come in handy to inspect the contents without using the tar utility manually.
+It's possible to list the contents of a specific snapshot using the `peek` command. This will list the contents of the snapshot along with each respective sha256 digest for manual integrity checking. The optional parameter `what` is used to filter out the data and print only specific subdirectories or files. A grep command would likely accomplish the same results as well.
 
 ```sh
-confman extract <name> --contents
+confman peek [name [what]]
 ```
+
+When not providing a name, the command will print the first available snapshot and exit.
 
 ### More to come
 More details will be added here
