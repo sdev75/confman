@@ -219,22 +219,6 @@ init(){
   init_parseopts "$@"
   cfg_testflags "opts" "$F_DRYRUN"
   init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
-  # includedir & lookup
-  # Determines the include path of '.confman' file
-  # It can be requested via opt
-  # By default '$PWD/.confman' is inspected
-  #
-  local includedir filename
-  includedir=$(dirname "$(cfg_get "confman" "$PWD/.confman")")
-  filename=$(confman_resolve "$includedir")
-  if [ $? -ne 0 ]; then
-    errmsg "Unable to find .confman file in '$includedir'"
-    exit 1
-  fi
-  
-  #
-  # Save current .confman filename
-  cfg_set "confman" "$filename"
   dispatch
 }
 
@@ -248,7 +232,21 @@ dispatch(){
       parse_and_exit
       exit $?
       ;;
-    create|copy|list|remove|import|extract|peek)
+    list)
+      dispatch_snapshot "$action"
+      ;;
+    create|copy|remove|import|extract|peek)
+      # includedir & lookup
+      # Determines the include path of '.confman' file
+      # It can be requested via opt
+      # By default '$PWD/.confman' is inspected
+      #
+      confman_resolve
+      if [ $? -ne 0 ]; then
+        errmsg "Unable to find .confman file in '$PWD' and any of its parent folders."
+        exit 1
+      fi
+  
       dispatch_snapshot "$action"
       ;;
     *)

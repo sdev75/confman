@@ -15,13 +15,22 @@ confman_resolve_(){
 
 confman_resolve(){
   local includedir filename
-  includedir="$1"
+
+  if [ -n "$1" ]; then
+    # use requested includedir
+    includedir="$1"
+  else
+    # attempt to get file from within directory
+    includedir=$(dirname "$(cfg_get "confman" "$PWD/.confman")")
+  fi
+  
   filename=$(confman_resolve_ "$includedir")
   if [ $? -eq 1 ]; then
     return 1
   fi
 
-  echo "$filename"
+  # Save current .confman filename
+  cfg_set "confman" "$filename"
   return 0
 }
 
@@ -84,4 +93,3 @@ confman_print(){
     printf "%s\n" "$name${fs}$action${fs}$filename${fs}$flags"
   done
 }
-
