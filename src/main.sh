@@ -222,31 +222,37 @@ init(){
   dispatch
 }
 
+resolve_confman(){
+  # includedir & lookup
+  # Determines the include path of '.confman' file
+  # It can be requested via opt
+  # By default '$PWD/.confman' is inspected
+  #
+  confman_resolve
+  if [ $? -ne 0 ]; then
+    errmsg "Unable to find .confman file in '$PWD' and any of its parent folders."
+    return 1
+  fi
+
+  return 0
+}
+
 dispatch(){
   local buf action
-  # Print processed conf without proceeding further
-  
+
   action=$(cfg_get "action" "none")
   case "$action" in
     parse)
+      resolve_confman || exit $?
       parse_and_exit
       exit $?
       ;;
-    list)
+    list|copy|remove|import|extract|peek)
       dispatch_snapshot "$action"
-      ;;
-    create|copy|remove|import|extract|peek)
-      # includedir & lookup
-      # Determines the include path of '.confman' file
-      # It can be requested via opt
-      # By default '$PWD/.confman' is inspected
-      #
-      confman_resolve
-      if [ $? -ne 0 ]; then
-        errmsg "Unable to find .confman file in '$PWD' and any of its parent folders."
-        exit 1
-      fi
-  
+      exit $?
+      ;; 
+    create)
+      resolve_confman || exit $?
       dispatch_snapshot "$action"
       ;;
     *)
@@ -257,7 +263,7 @@ dispatch(){
 }
 
 parse_and_exit(){
-  echo "Using $(cfg_get confman)"
+  echo "Using $(cfg_get "confman")"
   # Parse and process configuration file
   buf=$(confman_parse "$(cfg_get confman)")
   if [ $? -ne 0 ]; then
