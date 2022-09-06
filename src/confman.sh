@@ -41,9 +41,8 @@ confman_parse_(){
   script=('
 #include confman.awk
   ')
-
+  
   buf=$(awk -v fs="$CONFMAN_FS" -v rs="$CONFMAN_RS" "${script[0]}" "$1")
- 
   res=$?
   printf "%s" "$buf" | xxd -p
   return $(( res ))
@@ -51,6 +50,7 @@ confman_parse_(){
 
 confman_parse(){
   local buf IFS
+
   buf=$(confman_parse_ "$1")
   if [ $? -ne 0 ]; then
     return 1

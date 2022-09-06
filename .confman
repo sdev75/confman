@@ -1,14 +1,11 @@
-
 vim {
-  add .vimrc
-  add .vim/colors/
-  add .vim/pack/
-  add .vim/syntax/
+  $HOME/.vimrc
+  $HOME/.vim/
 }
 
 profile {
-  add .bashrc
-  add .bash_profile
-  add .xinitrc
+  $HOME/.bashrc
+  $HOME/.bash_profile
+  $HOME/.xinitrc
 }
 

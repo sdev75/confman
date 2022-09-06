@@ -70,6 +70,7 @@ init_parseopts(){
       -c|--config)
         cfg_setflags "opts" $F_CONFMAN_FILE
         cfg_set "confman" "$2"
+        echo $(cfg_get "confman")
         shift 2
         ;;
       -t|--tag)
@@ -218,7 +219,6 @@ init(){
   init_flags
   init_parseopts "$@"
   cfg_testflags "opts" "$F_DRYRUN"
-  init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
   dispatch
 }
 
@@ -248,12 +248,17 @@ dispatch(){
       exit $?
       ;;
     list|copy|remove|import|extract|peek)
+      init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
       dispatch_snapshot "$action"
       exit $?
       ;; 
     create)
+      init_repodir "$(cfg_get "repodir" "$HOME/.cache/confman")"
       resolve_confman || exit $?
       dispatch_snapshot "$action"
+      ;;
+    help)
+      help 0
       ;;
     *)
       errmsg "No route available for action '$action'"
