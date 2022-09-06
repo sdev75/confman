@@ -8,6 +8,11 @@ Global Options:
       --repodir   Use a specific repository directory
       --dryrun    Show commands to be executed without executing them
   -f, --force     Force certain operations, such as overwriting existing files
+      --printf    Print format snapshots list
+                    format flags:
+                      %p = snapshot filename
+                      %n = snapshot name
+                    example: confman ls [name] --printf "%p\n"
 
 Configuration Commands:
       parse       Parse configuration, print it then exit
