@@ -36,11 +36,11 @@ init_repodir(){
 init_flags(){
   cfg_setflags "opts" 0
   readonly F_CONFMAN_FILE=$((1 << 0))
-  readonly F_PARSE_ONLY=$((2 << 0))
-  readonly F_DRYRUN=$((4 << 0))
-  readonly F_FORCE=$((8 << 0))
-  readonly F_PRINTF=$((16 << 0))
-  readonly F_LIST_CONTENTS=$((32 << 0))
+  readonly F_PARSE_ONLY=$((1 << 1))
+  readonly F_DRYRUN=$((1 << 2))
+  readonly F_FORCE=$((1 << 3))
+  readonly F_PRINTF=$((1 << 4))
+  readonly F_LIST_CONTENTS=$((1 << 5))
 }
 
 init_parseopts(){
