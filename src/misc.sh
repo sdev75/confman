@@ -5,6 +5,7 @@ Usage confman [OPTIONS]
 Global Options:
   -h, --help      Prints this message
   -c, --config    Configuration file to read
+      --repodir   Use a specific repository directory
       --dryrun    Show commands to be executed without executing them
   -f, --force     Force certain operations, such as overwriting existing files
 
