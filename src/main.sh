@@ -45,7 +45,7 @@ init_flags(){
 
 init_parseopts(){
   local shortargs longargs opts
-  shortargs="hc:t:n:f"
+  shortargs="hdc:t:n:f"
   longargs="help,config:,parse,repodir:,tag:,namespace:,dryrun,force"
   longargs="$longargs,printf:,contents"
   opts=$(getopt -o $shortargs --long $longargs -- "$@")
@@ -81,7 +81,7 @@ init_parseopts(){
         cfg_set "namespace" "$2"
         shift 2
         ;;
-      --dryrun)
+      -d|--dryrun)
         cfg_setflags "opts" "$F_DRYRUN"
         shift
         ;;
