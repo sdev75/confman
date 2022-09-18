@@ -218,7 +218,6 @@ init_parseopts(){
 init(){
   init_flags
   init_parseopts "$@"
-  cfg_testflags "opts" "$F_DRYRUN"
   dispatch
 }
 
