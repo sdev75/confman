@@ -1,6 +1,7 @@
 
-declare -a HELPTEXT=("
-Usage confman [OPTIONS]
+usage () {
+  cat <<EOF
+Usage confman @VERSION@ [FLAGS] [OPTIONS]
 
 Global Options:
   -h, --help      Prints this message
@@ -35,7 +36,8 @@ Snapshot Scanning:
 Snapshot Options:
   -t, --tag       Set snapshot tag value
   -n, --ns        Set snapshot namespace value
-")
+EOF
+}
 
 errmsg(){
   exec 1>&2
@@ -43,6 +45,6 @@ errmsg(){
 }
 
 help(){
-  echo "${HELPTEXT[0]}"
+  usage
   exit "$1"
 }

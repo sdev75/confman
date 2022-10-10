@@ -260,8 +260,7 @@ dispatch(){
       help 0
       ;;
     *)
-      errmsg "No route available for action '$action'"
-      help 1
+      help 0
       ;;
   esac
 }
